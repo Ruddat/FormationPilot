@@ -1,6 +1,8 @@
 /**
  * FormationPilot - ESP32 Follower Firmware
  * ==========================================
+ * by aeroFun Fpv Ingo Ruddat
+ *
  * Main firmware for the ESP32-based follower module.
  *
  * This firmware runs on each follower aircraft and:

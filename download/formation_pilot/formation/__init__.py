@@ -4,4 +4,4 @@ Supports INAV and ArduPilot via MAVLink + MSP
 """
 
 __version__ = "0.1.0"
-__author__ = "FormationPilot Project"
+__author__ = "aeroFun Fpv Ingo Ruddat"

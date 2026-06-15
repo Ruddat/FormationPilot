@@ -2,6 +2,8 @@
 
 **Platform-Agnostic Formation Flight Engine for INAV & ArduPilot**
 
+*by aeroFun Fpv Ingo Ruddat*
+
 Leader-Follower Formationsflug-System mit Lora-Funkverbindung und Live-Web-Dashboard. Der Leader fliegt normal, die Follower empfangen ihre Zielposition per Funk und folgen automatisch.
 
 ## Architektur
