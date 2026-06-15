@@ -5,142 +5,323 @@ FormationPilot - Main entry point
 Usage:
     python main.py                    # Run with default config
     python main.py config.yaml        # Run with custom config
-    python main.py --demo             # Run demo simulation (no hardware needed)
+    python main.py --demo             # Interactive demo simulation
+    python main.py --web              # Web dashboard with simulated data
     python main.py --help             # Show help
 """
 
 import argparse
 import logging
+import os
 import sys
 import time
 import math
+import threading
 
 # Add parent directory to path
-sys.path.insert(0, ".")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from formation.formations import (
-    FormationCalculator, FormationType, LeaderState, Position
+    FormationCalculator, FormationType, FollowerTarget, LeaderState, Position
 )
+
+
+FORMATION_NAMES = {
+    FormationType.V_SHAPE: "V-Formation",
+    FormationType.LINE: "Linie",
+    FormationType.ECHELON_RIGHT: "Echelon Rechts",
+    FormationType.ECHELON_LEFT: "Echelon Links",
+    FormationType.CIRCLE: "Kreis",
+    FormationType.CUSTOM: "Custom",
+}
+
+FORMATION_ICONS = {
+    FormationType.V_SHAPE: "🔀",
+    FormationType.LINE: "📏",
+    FormationType.ECHELON_RIGHT: "↗️",
+    FormationType.ECHELON_LEFT: "↖️",
+    FormationType.CIRCLE: "⭕",
+    FormationType.CUSTOM: "⚙️",
+}
 
 
 def run_demo():
     """
-    Run a demonstration of the formation calculator without any hardware.
-    Simulates a leader flying in a circle and shows how follower
-    positions are computed.
+    Interactive demonstration of the formation system.
+    Simulates a leader flying in a circle with real-time updates.
+    Press number keys to switch formations, +/- to change spacing, q to quit.
     """
-    print("=" * 60)
-    print("FormationPilot DEMO - Simulated Formation Flight")
-    print("=" * 60)
+    print()
+    print("╔══════════════════════════════════════════════════════════╗")
+    print("║       ✈️  FormationPilot DEMO - Interactive Mode         ║")
+    print("╚══════════════════════════════════════════════════════════╝")
     print()
 
-    # Create calculator with V-formation
+    # Setup
     calc = FormationCalculator(
         formation_type=FormationType.V_SHAPE,
         spacing=20.0,
         altitude_offset=0.0
     )
 
-    # Define 3 followers
     follower_ids = [1, 2, 3]
-
-    # Simulate leader flying in a circle
-    home_lat = 52.5200  # Berlin
+    home_lat = 52.5200
     home_lon = 13.4050
     altitude = 100.0
-    radius = 200.0  # Circle radius in meters
+    radius = 200.0
+    speed = 15.0  # m/s
+    current_formation = FormationType.V_SHAPE
+    spacing = 20.0
 
-    print(f"Home position: {home_lat:.4f}°N, {home_lon:.4f}°E")
-    print(f"Altitude: {altitude}m, Circle radius: {radius}m")
-    print(f"Formation: V-SHAPE, Spacing: 20m")
-    print(f"Followers: {follower_ids}")
+    # Circle flight: angle increases over time
+    angle_deg = 0.0
+    dt = 0.2  # 200ms update = 5 Hz
+    angle_rate = (speed / radius) * (180.0 / math.pi)  # degrees per second
+
+    print(f"  📍 Home: {home_lat:.4f}°N, {home_lon:.4f}°E")
+    print(f"  🏔️  Alt: {altitude}m | Radius: {radius}m | Speed: {speed}m/s")
+    print(f"  👥 Followers: {follower_ids}")
+    print()
+    print("  Tastatur-Steuerung:")
+    print("  ─────────────────────────────────────────")
+    print("  [1] V-Shape    [2] Linie    [3] Echelon R")
+    print("  [4] Echelon L  [5] Kreis    [6] Custom")
+    print("  [+] Spacing +5 [−] Spacing −5")
+    print("  [a] Alt-Offset +5 [z] Alt-Offset −5")
+    print("  [q] Beenden")
+    print("  ─────────────────────────────────────────")
     print()
 
-    # Simulate 8 positions around the circle
-    for step in range(8):
-        angle_deg = step * 45  # 0, 45, 90, 135, 180, 225, 270, 315
+    # Non-blocking keyboard input
+    import select
 
-        # Calculate leader position on the circle
-        angle_rad = math.radians(angle_deg)
-        dlat = (radius * math.cos(angle_rad)) / 111320.0
-        dlon = (radius * math.sin(angle_rad)) / (111320.0 * math.cos(math.radians(home_lat)))
+    running = True
+    step = 0
 
-        leader = LeaderState(
-            position=Position(
-                lat=home_lat + dlat,
-                lon=home_lon + dlon,
-                alt=altitude
-            ),
-            heading=(angle_deg + 90) % 360,  # Tangent to circle
-            ground_speed=15.0,  # m/s
-            vertical_speed=0.0,
-            timestamp=time.time()
-        )
+    def check_key():
+        """Check for keyboard input (non-blocking)."""
+        try:
+            if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                return sys.stdin.readline().strip().lower()
+        except Exception:
+            pass
+        return None
 
-        # Compute follower targets
-        targets = calc.compute_targets(leader, follower_ids)
+    # On Windows, select doesn't work on stdin. Use msvcrt instead.
+    try:
+        import msvcrt
+        def check_key():
+            if msvcrt.kbhit():
+                return msvcrt.getch().decode('utf-8', errors='ignore').lower()
+            return None
+    except ImportError:
+        pass  # Use select-based version (Linux/Mac)
 
-        # Display
-        print(f"--- Step {step + 1}: Leader heading {leader.heading:.0f}° ---")
-        print(f"  Leader: ({leader.position.lat:.6f}, {leader.position.lon:.6f}) "
-              f"alt={leader.position.alt:.0f}m")
+    try:
+        while running:
+            # Check keyboard input
+            key = check_key()
+            if key:
+                formation_changed = False
+                if key == '1':
+                    current_formation = FormationType.V_SHAPE
+                    formation_changed = True
+                elif key == '2':
+                    current_formation = FormationType.LINE
+                    formation_changed = True
+                elif key == '3':
+                    current_formation = FormationType.ECHELON_RIGHT
+                    formation_changed = True
+                elif key == '4':
+                    current_formation = FormationType.ECHELON_LEFT
+                    formation_changed = True
+                elif key == '5':
+                    current_formation = FormationType.CIRCLE
+                    formation_changed = True
+                elif key == '6':
+                    current_formation = FormationType.CUSTOM
+                    formation_changed = True
+                elif key in ('+', '='):
+                    spacing = min(spacing + 5, 100)
+                    formation_changed = True
+                elif key in ('-', '_'):
+                    spacing = max(spacing - 5, 5)
+                    formation_changed = True
+                elif key == 'a':
+                    calc.altitude_offset += 5
+                    print(f"  📈 Alt-Offset: {calc.altitude_offset:.0f}m")
+                elif key == 'z':
+                    calc.altitude_offset -= 5
+                    print(f"  📉 Alt-Offset: {calc.altitude_offset:.0f}m")
+                elif key == 'q':
+                    running = False
+                    break
 
-        for target in targets:
-            dist = FormationCalculator.distance_between(
-                leader.position, target.target_position
+                if formation_changed:
+                    calc.set_formation(current_formation, spacing)
+
+            # Update leader position (flying in circle)
+            angle_rad = math.radians(angle_deg)
+            dlat = (radius * math.cos(angle_rad)) / 111320.0
+            dlon = (radius * math.sin(angle_rad)) / (111320.0 * math.cos(math.radians(home_lat)))
+
+            leader = LeaderState(
+                position=Position(
+                    lat=home_lat + dlat,
+                    lon=home_lon + dlon,
+                    alt=altitude
+                ),
+                heading=(angle_deg + 90) % 360,
+                ground_speed=speed,
+                vertical_speed=0.0,
+                timestamp=time.time()
             )
-            bearing = FormationCalculator.bearing_between(
-                leader.position, target.target_position
+
+            # Compute follower targets
+            targets = calc.compute_targets(leader, follower_ids)
+
+            # Clear and redraw (simplified - works on all terminals)
+            # Build a compact status line
+            icon = FORMATION_ICONS.get(current_formation, "?")
+            fname = FORMATION_NAMES.get(current_formation, "?")
+
+            status = (
+                f"\r  {icon} {fname} | Spacing: {spacing:.0f}m | "
+                f"Alt-Off: {calc.altitude_offset:.0f}m | "
+                f"Hdg: {leader.heading:05.1f}° | "
+                f"Spd: {speed:.0f}m/s | "
+                f"F1:{FormationCalculator.distance_between(leader.position, targets[0].target_position):.0f}m "
+                f"F2:{FormationCalculator.distance_between(leader.position, targets[1].target_position):.0f}m "
+                f"F3:{FormationCalculator.distance_between(leader.position, targets[2].target_position):.0f}m"
             )
-            print(f"  Follower {target.follower_id}: "
-                  f"({target.target_position.lat:.6f}, {target.target_position.lon:.6f}) "
-                  f"alt={target.target_position.alt:.0f}m | "
-                  f"dist={dist:.1f}m, bearing={bearing:.0f}° | "
-                  f"offset: R={target.offset.offset_right:.0f}m, "
-                  f"B={target.offset.offset_behind:.0f}m")
-        print()
+            sys.stdout.write(status + "   ")
+            sys.stdout.flush()
 
-    # Demo formation change
-    print("--- Formation Change: V_SHAPE -> LINE ---")
-    calc.set_formation(FormationType.LINE)
+            # Every 25 steps (~5s), print a detail line
+            if step % 25 == 0:
+                print()
+                print(f"  🎯 Leader: ({leader.position.lat:.6f}, {leader.position.lon:.6f}) "
+                      f"alt={leader.position.alt:.0f}m hdg={leader.heading:.0f}°")
+                for t in targets:
+                    dist = FormationCalculator.distance_between(leader.position, t.target_position)
+                    bear = FormationCalculator.bearing_between(leader.position, t.target_position)
+                    print(f"  🛩️  F{t.follower_id}: dist={dist:.1f}m bear={bear:.0f}° "
+                          f"R={t.offset.offset_right:.0f}m B={t.offset.offset_behind:.0f}m "
+                          f"↑={t.offset.offset_above:.0f}m")
 
-    leader = LeaderState(
-        position=Position(lat=home_lat, lon=home_lon, alt=altitude),
-        heading=0.0,
-        ground_speed=15.0,
-        timestamp=time.time()
+            # Advance angle
+            angle_deg = (angle_deg + angle_rate * dt) % 360
+            step += 1
+            time.sleep(dt)
+
+    except KeyboardInterrupt:
+        pass
+
+    print()
+    print()
+    print("  ✈️ Demo beendet. Tschüss!")
+    print()
+
+
+def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
+    """
+    Run the web dashboard with live simulated formation data.
+    The simulation animates the leader in a circle and updates
+    the web UI in real-time via WebSocket.
+    """
+    from web import FormationWebApp, WebState
+
+    state = WebState(
+        formation_type="v_shape",
+        formation_spacing=20.0,
+        altitude_offset=0.0,
+        engine_state="running",
+        fc_type="inav",
+        last_update=time.time()
     )
-    targets = calc.compute_targets(leader, follower_ids)
 
-    for target in targets:
-        dist = FormationCalculator.distance_between(
-            leader.position, target.target_position
-        )
-        print(f"  Follower {target.follower_id}: "
-              f"dist={dist:.1f}m behind, offset: "
-              f"R={target.offset.offset_right:.0f}m, "
-              f"B={target.offset.offset_behind:.0f}m")
+    app = FormationWebApp(state)
+
+    # Start simulation in background
+    def simulate():
+        home_lat = 52.5200
+        home_lon = 13.4050
+        altitude = 100.0
+        radius = 200.0
+        speed = 15.0
+        angle_deg = 0.0
+        dt = 0.2
+
+        calc = FormationCalculator(FormationType.V_SHAPE, spacing=20.0)
+        follower_ids = [1, 2, 3]
+
+        angle_rate = (speed / radius) * (180.0 / math.pi)
+
+        while True:
+            angle_rad = math.radians(angle_deg)
+            dlat = (radius * math.cos(angle_rad)) / 111320.0
+            dlon = (radius * math.sin(angle_rad)) / (111320.0 * math.cos(math.radians(home_lat)))
+
+            leader = LeaderState(
+                position=Position(lat=home_lat + dlat, lon=home_lon + dlon, alt=altitude),
+                heading=(angle_deg + 90) % 360,
+                ground_speed=speed,
+                timestamp=time.time()
+            )
+
+            targets = calc.compute_targets(leader, follower_ids)
+
+            # Update shared state
+            state.leader = {
+                "lat": leader.position.lat,
+                "lon": leader.position.lon,
+                "alt": leader.position.alt,
+                "heading": leader.heading,
+                "ground_speed": leader.ground_speed,
+                "vertical_speed": leader.vertical_speed,
+            }
+
+            followers = []
+            for t in targets:
+                dist = FormationCalculator.distance_between(leader.position, t.target_position)
+                bear = FormationCalculator.bearing_between(leader.position, t.target_position)
+                followers.append({
+                    "id": t.follower_id,
+                    "lat": t.target_position.lat,
+                    "lon": t.target_position.lon,
+                    "alt": t.target_position.alt,
+                    "distance": dist,
+                    "bearing": bear,
+                    "status": "following",
+                })
+            state.followers = followers
+            state.last_update = time.time()
+            state.uptime = time.time() - (state.last_update - 10)  # approximate
+
+            # Push to web clients
+            app.broadcast_update()
+
+            angle_deg = (angle_deg + angle_rate * dt) % 360
+            time.sleep(dt)
+
+    sim_thread = threading.Thread(target=simulate, daemon=True)
+    sim_thread.start()
 
     print()
-    print("--- Formation Change: LINE -> CIRCLE ---")
-    calc.set_formation(FormationType.CIRCLE, spacing=30.0)
-
-    targets = calc.compute_targets(leader, follower_ids)
-    for target in targets:
-        dist = FormationCalculator.distance_between(
-            leader.position, target.target_position
-        )
-        bearing = FormationCalculator.bearing_between(
-            leader.position, target.target_position
-        )
-        print(f"  Follower {target.follower_id}: "
-              f"dist={dist:.1f}m, bearing={bearing:.0f}°, offset: "
-              f"R={target.offset.offset_right:.0f}m, "
-              f"B={target.offset.offset_behind:.0f}m")
-
+    print("╔══════════════════════════════════════════════════════════╗")
+    print("║     ✈️  FormationPilot Web DEMO                         ║")
+    print("║     Live-Simulation mit Dashboard                       ║")
+    print("╚══════════════════════════════════════════════════════════╝")
     print()
-    print("Demo complete! The formation calculator correctly computes")
-    print("follower positions based on leader heading and formation type.")
+    print(f"  🌐 Browser öffnen: http://localhost:{port}")
+    print(f"  📡 Simulierter Leader fliegt Kreis um Berlin")
+    print(f"  🛩️  3 Follower in V-Formation")
+    print(f"  🔀 Formation wechselbar im Dashboard")
+    print()
+    print("  Strg+C zum Beenden")
+    print()
+
+    app.start(background=False, host=host, port=port)
 
 
 def run_engine(config_path: str):
@@ -162,7 +343,19 @@ def main():
     )
     parser.add_argument(
         "--demo", action="store_true",
-        help="Run demo simulation (no hardware needed)"
+        help="Run interactive terminal demo simulation"
+    )
+    parser.add_argument(
+        "--web", action="store_true",
+        help="Run web dashboard with live simulation"
+    )
+    parser.add_argument(
+        "--host", default="0.0.0.0",
+        help="Web server host (default: 0.0.0.0)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=5000,
+        help="Web server port (default: 5000)"
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true",
@@ -181,6 +374,8 @@ def main():
 
     if args.demo:
         run_demo()
+    elif args.web:
+        run_web_demo(host=args.host, port=args.port)
     else:
         run_engine(args.config)
 
