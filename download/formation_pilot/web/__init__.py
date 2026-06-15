@@ -20,19 +20,24 @@ state object that the engine updates on each cycle.
 
 import json
 import logging
+import os
+import sys
 import time
 import threading
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional
 
+# Add parent directory to path so we can import formation package
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, emit
 
-from .formations import (
+from formation.formations import (
     FormationCalculator, FormationType, FollowerTarget, LeaderState, Position
 )
-from .failsafe import FailsafeAction, FailsafeManager, FailsafeStatus
-from .lora_broadcaster import CommandType, LoraBroadcaster
+from formation.failsafe import FailsafeAction, FailsafeManager, FailsafeStatus
+from formation.lora_broadcaster import CommandType, LoraBroadcaster
 
 logger = logging.getLogger(__name__)
 
