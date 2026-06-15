@@ -1,0 +1,21 @@
+# FormationPilot - Platform-Agnostic Formation Flight Engine
+# Dependencies for Raspberry Pi companion computer
+
+# Serial communication (required)
+pyserial>=3.5
+
+# YAML configuration (required)
+PyYAML>=6.0
+
+# Optional: Full pymavlink library for advanced MAVLink features
+# The built-in minimal parser is sufficient for most use cases,
+# but pymavlink provides complete MAVLink v1/v2 support.
+# Uncomment if you need advanced features or official dialect support.
+# pymavlink>=2.4.0
+
+# Optional: WebUI dependencies (for configuration dashboard)
+# flask>=3.0.0
+# flask-socketio>=5.3.0
+
+# Optional: GPS coordinate utilities
+# geographiclib>=2.0

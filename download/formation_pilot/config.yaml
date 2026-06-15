@@ -1,0 +1,120 @@
+# FormationPilot Configuration
+# ============================
+# This file configures the formation flight engine running on
+# the leader's companion computer (Raspberry Pi).
+
+# Flight Controller Connection
+# ----------------------------
+# uart: Serial port for FC communication
+#   - Raspberry Pi: /dev/serial0 (GPIO UART)
+#   - USB: /dev/ttyUSB0 or /dev/ttyACM0
+# mavlink_baud: MAVLink baudrate (57600 is standard)
+# msp_baud: MSP baudrate for INAV (115200 is INAV default)
+# type: Flight controller type
+#   - "auto": Auto-detect from MAVLink heartbeat
+#   - "inav": Force INAV mode
+#   - "ardupilot": Force ArduPilot mode
+
+fc:
+  uart: /dev/serial0
+  mavlink_baud: 57600
+  msp_baud: 115200
+  type: auto
+
+# Lora Radio Configuration
+# ------------------------
+# uart: Serial port for Lora module
+#   - Raspberry Pi: /dev/serial1 (second UART)
+#   - USB: /dev/ttyUSB1
+# baud: 9600 is standard for Lora modules
+# channel: Radio channel (1-8, must match on all modules)
+# tx_power: Transmit power in dBm (max 20 in EU, 30 in US)
+# spreading_factor: SF7 (fast, ~3km) to SF12 (slow, ~10km)
+#   - SF7:  Fast, short range - good for close formation
+#   - SF9:  Medium - good balance
+#   - SF12: Long range, slow update rate
+
+lora:
+  uart: /dev/serial1
+  baud: 9600
+  channel: 1
+  tx_power: 20
+  spreading_factor: 7
+
+# Formation Configuration
+# -----------------------
+# type: Formation pattern
+#   - "v_shape": Classic V-formation (default)
+#   - "line": Line behind the leader
+#   - "echelon_right": Staggered right
+#   - "echelon_left": Staggered left
+#   - "circle": Circle around the leader
+#   - "custom": Use per-follower offsets defined below
+#
+# spacing: Base distance between aircraft in meters
+# altitude_offset: Default altitude offset for all followers (meters)
+# circle_radius: Radius for circle formation (meters)
+
+formation:
+  type: v_shape
+  spacing: 20
+  altitude_offset: 0
+  circle_radius: 30
+
+# Follower Definitions
+# --------------------
+# Each follower has:
+#   id: Unique follower ID (1-255)
+#   offset_right: Meters to the right of leader (negative = left)
+#   offset_behind: Meters behind the leader (negative = ahead)
+#   offset_above: Meters above the leader (negative = below)
+#
+# Note: For built-in formations (v_shape, line, echelon, circle),
+# offsets are auto-calculated. The offsets here are used only for
+# "custom" formation type.
+#
+# Example V-formation with 3 followers:
+#   F1: 20m right, 5m behind
+#   F2: 20m left, 5m behind
+#   F3: Directly behind, 10m back
+
+followers:
+  - id: 1
+    offset_right: 20
+    offset_behind: 5
+    offset_above: 0
+  - id: 2
+    offset_right: -20
+    offset_behind: 5
+    offset_above: 0
+  - id: 3
+    offset_right: 0
+    offset_behind: 15
+    offset_above: 0
+
+# Failsafe Configuration
+# ----------------------
+# geo_fence_radius: Maximum distance from home point (meters)
+# link_timeout: Time without Lora data before triggering failsafe (seconds)
+# max_distance: Maximum follower distance from leader (meters)
+# min_distance: Minimum follower distance from leader (meters)
+
+failsafe:
+  geo_fence_radius: 500
+  link_timeout: 3
+  max_distance: 100
+  min_distance: 10
+
+# Engine Configuration
+# --------------------
+# update_rate_hz: Target update rate (5 Hz recommended for SF7 Lora)
+#   - SF7: 5-10 Hz possible
+#   - SF9: 2-5 Hz
+#   - SF12: 0.5-1 Hz
+# heartbeat_interval: Seconds between heartbeat broadcasts
+# enable_failsafe: Enable/disable failsafe monitoring
+
+engine:
+  update_rate_hz: 5
+  heartbeat_interval: 2
+  enable_failsafe: true
