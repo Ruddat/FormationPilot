@@ -31,6 +31,9 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        /* Aircraft markers - no background */
+        .aircraft-marker { background: none !important; border: none !important; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
@@ -431,20 +434,36 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19
 }).addTo(map);
 
-// Custom icons
-const leaderIcon = L.divIcon({
-    className: 'leader-marker',
-    html: '<div style="width:20px;height:20px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10]
-});
+// Custom aircraft icons with rotation
+function createLeaderIcon(heading) {
+    const rot = heading || 0;
+    return L.divIcon({
+        className: 'aircraft-marker',
+        html: `<div style="transform: rotate(${rot}deg); width:36px; height:36px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0 0 6px rgba(59,130,246,0.7));">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2 L14 10 L22 13 L14 15 L14 20 L12 18 L10 20 L10 15 L2 13 L10 10 Z" 
+                      fill="#3b82f6" stroke="#ffffff" stroke-width="0.8" stroke-linejoin="round"/>
+            </svg>
+        </div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+}
 
-const followerIcon = L.divIcon({
-    className: 'follower-marker',
-    html: '<div style="width:16px;height:16px;background:#10b981;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>',
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
-});
+function createFollowerIcon(heading, id) {
+    const rot = heading || 0;
+    return L.divIcon({
+        className: 'aircraft-marker',
+        html: `<div style="transform: rotate(${rot}deg); width:30px; height:30px; display:flex; align-items:center; justify-content:center; filter: drop-shadow(0 0 5px rgba(16,185,129,0.6));">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 3 L13.5 9.5 L20 12 L13.5 14 L13.5 18.5 L12 17 L10.5 18.5 L10.5 14 L4 12 L10.5 9.5 Z" 
+                      fill="#10b981" stroke="#ffffff" stroke-width="0.7" stroke-linejoin="round"/>
+            </svg>
+        </div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+}
 
 let leaderMarker = null;
 let followerMarkers = {};
@@ -515,9 +534,10 @@ function updateUI(data) {
         // Update map marker
         if (leaderMarker) {
             leaderMarker.setLatLng([l.lat, l.lon]);
+            leaderMarker.setIcon(createLeaderIcon(l.heading));
         } else {
-            leaderMarker = L.marker([l.lat, l.lon], {icon: leaderIcon})
-                .addTo(map).bindPopup('<b>Leader</b>');
+            leaderMarker = L.marker([l.lat, l.lon], {icon: createLeaderIcon(l.heading)})
+                .addTo(map).bindPopup('<b>✈️ Leader</b>');
         }
 
         // Trail
@@ -564,9 +584,10 @@ function updateUI(data) {
             if (f.lat && f.lon) {
                 if (followerMarkers[f.id]) {
                     followerMarkers[f.id].setLatLng([f.lat, f.lon]);
+                    followerMarkers[f.id].setIcon(createFollowerIcon(data.leader ? data.leader.heading : 0, f.id));
                 } else {
-                    followerMarkers[f.id] = L.marker([f.lat, f.lon], {icon: followerIcon})
-                        .addTo(map).bindPopup(`<b>Follower ${f.id}</b>`);
+                    followerMarkers[f.id] = L.marker([f.lat, f.lon], {icon: createFollowerIcon(data.leader ? data.leader.heading : 0, f.id)})
+                        .addTo(map).bindPopup(`<b>✈️ Follower ${f.id}</b>`);
                 }
 
                 // Formation line from leader to follower
