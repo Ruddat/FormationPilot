@@ -13,9 +13,9 @@ PyYAML>=6.0
 # Uncomment if you need advanced features or official dialect support.
 # pymavlink>=2.4.0
 
-# Optional: WebUI dependencies (for configuration dashboard)
-# flask>=3.0.0
-# flask-socketio>=5.3.0
+# WebUI dependencies (required for web dashboard)
+flask>=3.0.0
+flask-socketio>=5.3.0
 
 # Optional: GPS coordinate utilities
 # geographiclib>=2.0

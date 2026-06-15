@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormationPilot</title>
+
+    <!-- Leaflet.js for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --bg2: #111827;
+            --card: #1a2332;
+            --border: #2a3a4e;
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --leader: #3b82f6;
+            --follower: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header h1 span { color: var(--accent); }
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .status-running { background: rgba(16,185,129,0.15); color: var(--green); }
+        .status-paused { background: rgba(245,158,11,0.15); color: var(--yellow); }
+        .status-failsafe { background: rgba(239,68,68,0.15); color: var(--red); animation: pulse 1s infinite; }
+        .status-stopped { background: rgba(136,146,164,0.15); color: var(--text-dim); }
+
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        /* Main layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            height: calc(100vh - 53px);
+        }
+
+        /* Map */
+        #map {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg2);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .card-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        /* Formation selector */
+        .formation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .formation-btn {
+            background: var(--bg2);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            color: var(--text);
+        }
+        .formation-btn:hover {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.05);
+        }
+        .formation-btn.active {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.1);
+            box-shadow: 0 0 12px rgba(59,130,246,0.2);
+        }
+        .formation-btn .icon { font-size: 20px; margin-bottom: 4px; }
+        .formation-btn .name { font-size: 12px; font-weight: 600; }
+
+        /* Controls */
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .control-row label {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+        .control-row .value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            outline: none;
+            margin-top: 6px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+        }
+
+        /* Follower cards */
+        .follower-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .follower-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .follower-id {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .follower-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+        .follower-dot.lost { background: var(--red); animation: pulse 1s infinite; }
+        .follower-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 12px;
+            font-size: 12px;
+        }
+        .follower-stats .label { color: var(--text-dim); }
+        .follower-stats .val { font-weight: 600; text-align: right; }
+
+        /* Failsafe indicators */
+        .failsafe-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .failsafe-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+        .fs-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .fs-ok { background: var(--green); }
+        .fs-warn { background: var(--yellow); }
+        .fs-error { background: var(--red); animation: pulse 1s infinite; }
+
+        /* Command buttons */
+        .cmd-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+        }
+        .cmd-btn.hold {
+            background: rgba(245,158,11,0.15);
+            color: var(--yellow);
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        .cmd-btn.rth {
+            background: rgba(59,130,246,0.15);
+            color: var(--accent);
+            border: 1px solid rgba(59,130,246,0.3);
+        }
+        .cmd-btn.land {
+            background: rgba(239,68,68,0.15);
+            color: var(--red);
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+        .cmd-btn.resume {
+            background: rgba(16,185,129,0.15);
+            color: var(--green);
+            border: 1px solid rgba(16,185,129,0.3);
+        }
+        .cmd-btn:hover { transform: scale(1.02); }
+        .cmd-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .main {
+                grid-template-columns: 1fr;
+                grid-template-rows: 50vh 1fr;
+            }
+            .sidebar { max-height: 50vh; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <h1>✈️ Formation<span>Pilot</span></h1>
+        <span id="statusBadge" class="status-badge status-stopped">OFFLINE</span>
+    </div>
+    <div class="header-right">
+        <span id="fcType">FC: ---</span>
+        <span id="uptime">00:00:00</span>
+        <span id="updateRate">0 Hz</span>
+    </div>
+</div>
+
+<div class="main">
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <!-- Leader Info -->
+        <div class="card">
+            <div class="card-title">🎯 Leader</div>
+            <div class="follower-stats">
+                <span class="label">Position</span>
+                <span class="val" id="leaderPos">---</span>
+                <span class="label">Altitude</span>
+                <span class="val" id="leaderAlt">---</span>
+                <span class="label">Heading</span>
+                <span class="val" id="leaderHdg">---</span>
+                <span class="label">Speed</span>
+                <span class="val" id="leaderSpd">---</span>
+            </div>
+        </div>
+
+        <!-- Formation Selector -->
+        <div class="card">
+            <div class="card-title">🔀 Formation</div>
+            <div class="formation-grid" id="formationGrid">
+                <div class="formation-btn active" data-type="v_shape">
+                    <div class="icon">🔀</div>
+                    <div class="name">V-Shape</div>
+                </div>
+                <div class="formation-btn" data-type="line">
+                    <div class="icon">📏</div>
+                    <div class="name">Linie</div>
+                </div>
+                <div class="formation-btn" data-type="echelon_right">
+                    <div class="icon">↗️</div>
+                    <div class="name">Echelon R</div>
+                </div>
+                <div class="formation-btn" data-type="echelon_left">
+                    <div class="icon">↖️</div>
+                    <div class="name">Echelon L</div>
+                </div>
+                <div class="formation-btn" data-type="circle">
+                    <div class="icon">⭕</div>
+                    <div class="name">Kreis</div>
+                </div>
+                <div class="formation-btn" data-type="custom">
+                    <div class="icon">⚙️</div>
+                    <div class="name">Custom</div>
+                </div>
+            </div>
+
+            <!-- Spacing control -->
+            <div class="control-row" style="margin-top: 14px;">
+                <label>Abstand</label>
+                <span class="value" id="spacingVal">20m</span>
+            </div>
+            <input type="range" id="spacingSlider" min="5" max="100" value="20" step="1">
+
+            <div class="control-row" style="margin-top: 10px;">
+                <label>Höhen-Offset</label>
+                <span class="value" id="altOffVal">0m</span>
+            </div>
+            <input type="range" id="altOffSlider" min="-50" max="50" value="0" step="1">
+        </div>
+
+        <!-- Follower Status -->
+        <div class="card">
+            <div class="card-title">🛩️ Follower</div>
+            <div id="followerList">
+                <div style="text-align:center; color: var(--text-dim); font-size:13px;">
+                    Warte auf Follower-Daten...
+                </div>
+            </div>
+        </div>
+
+        <!-- Failsafe Status -->
+        <div class="card">
+            <div class="card-title">🛡️ Failsafe</div>
+            <div class="failsafe-grid">
+                <div class="failsafe-item">
+                    <div class="fs-dot fs-ok" id="fsLink"></div>
+                    <span>Lora Link</span>
+                </div>
+                <div class="failsafe-item">
+                    <div class="fs-dot fs-ok" id="fsGps"></div>
+                    <span>GPS Fix</span>
+                </div>
+                <div class="failsafe-item">
+                    <div class="fs-dot fs-ok" id="fsFence"></div>
+                    <span>Geo-Fence</span>
+                </div>
+                <div class="failsafe-item">
+                    <div class="fs-dot fs-ok" id="fsDist"></div>
+                    <span>Abstand OK</span>
+                </div>
+            </div>
+
+            <!-- Emergency commands -->
+            <div class="cmd-row">
+                <button class="cmd-btn hold" onclick="sendCommand('HOLD')">⏸ HOLD</button>
+                <button class="cmd-btn resume" onclick="sendCommand('RESUME')">▶ RESUME</button>
+            </div>
+            <div class="cmd-row">
+                <button class="cmd-btn rth" onclick="sendCommand('RTH')">🏠 RTH</button>
+                <button class="cmd-btn land" onclick="sendCommand('LAND')">🛬 LAND</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+// ===== MAP SETUP =====
+const map = L.map('map', {
+    center: [52.52, 13.405],
+    zoom: 15,
+    zoomControl: true
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap',
+    maxZoom: 19
+}).addTo(map);
+
+// Custom icons
+const leaderIcon = L.divIcon({
+    className: 'leader-marker',
+    html: '<div style="width:20px;height:20px;background:#3b82f6;border:3px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(59,130,246,0.5);"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
+});
+
+const followerIcon = L.divIcon({
+    className: 'follower-marker',
+    html: '<div style="width:16px;height:16px;background:#10b981;border:2px solid #fff;border-radius:50%;box-shadow:0 0 8px rgba(16,185,129,0.5);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
+});
+
+let leaderMarker = null;
+let followerMarkers = {};
+let leaderTrail = [];
+let leaderTrailLine = null;
+
+// ===== WEBSOCKET =====
+const socket = io();
+
+socket.on('connect', () => {
+    console.log('WebSocket connected');
+    socket.emit('request_update');
+});
+
+socket.on('state_update', (data) => {
+    updateUI(data);
+});
+
+socket.on('formation_changed', (data) => {
+    updateFormationUI(data.type);
+});
+
+socket.on('disconnect', () => {
+    console.log('WebSocket disconnected');
+    document.getElementById('statusBadge').textContent = 'OFFLINE';
+    document.getElementById('statusBadge').className = 'status-badge status-stopped';
+});
+
+// ===== UI UPDATE =====
+function updateUI(data) {
+    // Engine state
+    const badge = document.getElementById('statusBadge');
+    const stateMap = {
+        'running': ['RUNNING', 'status-running'],
+        'paused': ['PAUSED', 'status-paused'],
+        'failsafe': ['FAILSAFE', 'status-failsafe'],
+        'stopped': ['OFFLINE', 'status-stopped'],
+    };
+    const [text, cls] = stateMap[data.engine_state] || ['???', 'status-stopped'];
+    badge.textContent = text;
+    badge.className = 'status-badge ' + cls;
+
+    // FC type
+    document.getElementById('fcType').textContent = 'FC: ' + (data.fc_type || '---').toUpperCase();
+
+    // Uptime
+    if (data.uptime) {
+        const h = Math.floor(data.uptime / 3600);
+        const m = Math.floor((data.uptime % 3600) / 60);
+        const s = Math.floor(data.uptime % 60);
+        document.getElementById('uptime').textContent =
+            `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+
+    // Leader
+    if (data.leader) {
+        const l = data.leader;
+        document.getElementById('leaderPos').textContent =
+            `${l.lat.toFixed(5)}, ${l.lon.toFixed(5)}`;
+        document.getElementById('leaderAlt').textContent =
+            `${l.alt.toFixed(0)} m`;
+        document.getElementById('leaderHdg').textContent =
+            `${l.heading.toFixed(0)}°`;
+        document.getElementById('leaderSpd').textContent =
+            `${l.ground_speed.toFixed(1)} m/s`;
+
+        // Update map marker
+        if (leaderMarker) {
+            leaderMarker.setLatLng([l.lat, l.lon]);
+        } else {
+            leaderMarker = L.marker([l.lat, l.lon], {icon: leaderIcon})
+                .addTo(map).bindPopup('<b>Leader</b>');
+        }
+
+        // Trail
+        leaderTrail.push([l.lat, l.lon]);
+        if (leaderTrail.length > 200) leaderTrail.shift();
+        if (leaderTrailLine) {
+            leaderTrailLine.setLatLngs(leaderTrail);
+        } else {
+            leaderTrailLine = L.polyline(leaderTrail, {
+                color: '#3b82f6', weight: 2, opacity: 0.5
+            }).addTo(map);
+        }
+    }
+
+    // Followers
+    if (data.followers && data.followers.length > 0) {
+        let html = '';
+        data.followers.forEach(f => {
+            html += `
+            <div class="follower-card">
+                <div class="follower-header">
+                    <span class="follower-id">
+                        <span class="follower-dot ${f.status === 'lost' ? 'lost' : ''}"></span>
+                        Follower ${f.id}
+                    </span>
+                    <span style="font-size:12px; color:var(--text-dim);">${f.status || 'following'}</span>
+                </div>
+                <div class="follower-stats">
+                    <span class="label">Entfernung</span>
+                    <span class="val">${(f.distance || 0).toFixed(1)} m</span>
+                    <span class="label">Peilung</span>
+                    <span class="val">${(f.bearing || 0).toFixed(0)}°</span>
+                    <span class="label">Alt</span>
+                    <span class="val">${(f.alt || 0).toFixed(0)} m</span>
+                </div>
+            </div>`;
+
+            // Map markers
+            if (f.lat && f.lon) {
+                if (followerMarkers[f.id]) {
+                    followerMarkers[f.id].setLatLng([f.lat, f.lon]);
+                } else {
+                    followerMarkers[f.id] = L.marker([f.lat, f.lon], {icon: followerIcon})
+                        .addTo(map).bindPopup(`<b>Follower ${f.id}</b>`);
+                }
+            }
+        });
+        document.getElementById('followerList').innerHTML = html;
+
+        // Auto-fit map to show all markers
+        const allPoints = [];
+        if (data.leader) allPoints.push([data.leader.lat, data.leader.lon]);
+        data.followers.forEach(f => {
+            if (f.lat && f.lon) allPoints.push([f.lat, f.lon]);
+        });
+        if (allPoints.length > 1 && leaderTrail.length < 5) {
+            map.fitBounds(L.latLngBounds(allPoints).pad(0.3));
+        }
+    }
+
+    // Failsafe
+    if (data.failsafe_status) {
+        const fs = data.failsafe_status;
+        setFailsafeDot('fsLink', fs.link_healthy);
+        setFailsafeDot('fsGps', fs.position_fresh);
+        setFailsafeDot('fsFence', fs.geo_fence_ok);
+        setFailsafeDot('fsDist', true); // TODO: from follower distances
+    }
+
+    // Formation controls
+    updateFormationUI(data.formation_type);
+    document.getElementById('spacingSlider').value = data.formation_spacing || 20;
+    document.getElementById('spacingVal').textContent = (data.formation_spacing || 20) + 'm';
+    document.getElementById('altOffSlider').value = data.altitude_offset || 0;
+    document.getElementById('altOffVal').textContent = (data.altitude_offset || 0) + 'm';
+}
+
+function setFailsafeDot(id, ok) {
+    const el = document.getElementById(id);
+    if (ok) {
+        el.className = 'fs-dot fs-ok';
+    } else {
+        el.className = 'fs-dot fs-error';
+    }
+}
+
+function updateFormationUI(type) {
+    document.querySelectorAll('.formation-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
+}
+
+// ===== CONTROLS =====
+
+// Formation selector
+document.querySelectorAll('.formation-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const type = btn.dataset.type;
+        const spacing = parseFloat(document.getElementById('spacingSlider').value);
+        const altOff = parseFloat(document.getElementById('altOffSlider').value);
+
+        fetch('/api/formation/change', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: type, spacing: spacing, altitude_offset: altOff})
+        }).then(r => r.json()).then(d => {
+            if (d.status === 'ok') updateFormationUI(type);
+        });
+    });
+});
+
+// Sliders
+document.getElementById('spacingSlider').addEventListener('input', (e) => {
+    document.getElementById('spacingVal').textContent = e.target.value + 'm';
+});
+document.getElementById('spacingSlider').addEventListener('change', (e) => {
+    changeFormation();
+});
+document.getElementById('altOffSlider').addEventListener('input', (e) => {
+    document.getElementById('altOffVal').textContent = e.target.value + 'm';
+});
+document.getElementById('altOffSlider').addEventListener('change', (e) => {
+    changeFormation();
+});
+
+function changeFormation() {
+    const type = document.querySelector('.formation-btn.active')?.dataset.type || 'v_shape';
+    const spacing = parseFloat(document.getElementById('spacingSlider').value);
+    const altOff = parseFloat(document.getElementById('altOffSlider').value);
+
+    fetch('/api/formation/change', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({type: type, spacing: spacing, altitude_offset: altOff})
+    });
+}
+
+// Command buttons
+function sendCommand(cmd) {
+    fetch('/api/follower/0/command', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({command: cmd})
+    });
+}
+
+// ===== PERIODIC UPDATE =====
+setInterval(() => {
+    socket.emit('request_update');
+}, 1000);
+
+// Also fetch state via HTTP as fallback
+setInterval(() => {
+    fetch('/api/state').then(r => r.json()).then(d => updateUI(d)).catch(() => {});
+}, 2000);
+</script>
+
+</body>
+</html>
