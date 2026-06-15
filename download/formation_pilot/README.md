@@ -83,6 +83,10 @@ formation_pilot/
         └── nvs_config.cpp      # NVS Lese/Schreib-Logik
 ```
 
+## Dashboard Screenshot
+
+![FormationPilot Web Dashboard](docs/dashboard_screenshot.png)
+
 ## Quick Start
 
 ### 1. Projekt klonen
