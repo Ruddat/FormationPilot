@@ -448,6 +448,7 @@ const followerIcon = L.divIcon({
 
 let leaderMarker = null;
 let followerMarkers = {};
+let formationLines = {};  // Lines from leader to followers
 let leaderTrail = [];
 let leaderTrailLine = null;
 
@@ -535,6 +536,9 @@ function updateUI(data) {
     if (data.followers && data.followers.length > 0) {
         let html = '';
         data.followers.forEach(f => {
+            const offR = f.offset_right || 0;
+            const offB = f.offset_behind || 0;
+            const offA = f.offset_above || 0;
             html += `
             <div class="follower-card">
                 <div class="follower-header">
@@ -551,6 +555,8 @@ function updateUI(data) {
                     <span class="val">${(f.bearing || 0).toFixed(0)}°</span>
                     <span class="label">Alt</span>
                     <span class="val">${(f.alt || 0).toFixed(0)} m</span>
+                    <span class="label">Offset</span>
+                    <span class="val">R${offR > 0 ? '+' : ''}${offR.toFixed(0)} B${offB > 0 ? '' : ''}${offB.toFixed(0)} ↑${offA.toFixed(0)}</span>
                 </div>
             </div>`;
 
@@ -561,6 +567,24 @@ function updateUI(data) {
                 } else {
                     followerMarkers[f.id] = L.marker([f.lat, f.lon], {icon: followerIcon})
                         .addTo(map).bindPopup(`<b>Follower ${f.id}</b>`);
+                }
+
+                // Formation line from leader to follower
+                if (data.leader) {
+                    if (formationLines[f.id]) {
+                        formationLines[f.id].setLatLngs([
+                            [data.leader.lat, data.leader.lon],
+                            [f.lat, f.lon]
+                        ]);
+                    } else {
+                        formationLines[f.id] = L.polyline([
+                            [data.leader.lat, data.leader.lon],
+                            [f.lat, f.lon]
+                        ], {
+                            color: '#10b981', weight: 1.5, opacity: 0.4,
+                            dashArray: '5, 5'
+                        }).addTo(map);
+                    }
                 }
             }
         });

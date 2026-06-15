@@ -228,6 +228,10 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
     Run the web dashboard with live simulated formation data.
     The simulation animates the leader in a circle and updates
     the web UI in real-time via WebSocket.
+
+    The simulation reads formation settings from the shared WebState,
+    so changes made in the dashboard (formation type, spacing, alt offset)
+    take effect immediately in the simulation.
     """
     from web import FormationWebApp, WebState
 
@@ -240,7 +244,23 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
         last_update=time.time()
     )
 
-    app = FormationWebApp(state)
+    # Shared calculator - the simulation reads from it,
+    # and the web app's formation change endpoint updates it
+    calc = FormationCalculator(FormationType.V_SHAPE, spacing=20.0)
+
+    # Register engine callbacks so web UI changes affect the simulation
+    engine_callbacks = {
+        "formation_change": lambda ft, sp=None: calc.set_formation(
+            ft,
+            spacing=float(sp) if sp else None
+        ),
+        "command_follower": lambda cmd, fid: print(f"  📡 Command {cmd.name} -> Follower {fid}"),
+    }
+
+    app = FormationWebApp(state, engine_callback=engine_callbacks)
+
+    # Track start time for uptime
+    start_time = time.time()
 
     # Start simulation in background
     def simulate():
@@ -251,13 +271,26 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
         speed = 15.0
         angle_deg = 0.0
         dt = 0.2
-
-        calc = FormationCalculator(FormationType.V_SHAPE, spacing=20.0)
         follower_ids = [1, 2, 3]
 
         angle_rate = (speed / radius) * (180.0 / math.pi)
 
         while True:
+            # Read current settings from shared state (updated by web UI)
+            try:
+                current_ft = FormationType(state.formation_type)
+                if calc.formation_type != current_ft:
+                    calc.set_formation(current_ft, state.formation_spacing)
+            except ValueError:
+                pass
+
+            # Sync spacing and altitude from web state
+            if abs(calc.spacing - state.formation_spacing) > 0.5:
+                calc.spacing = state.formation_spacing
+            if abs(calc.altitude_offset - state.altitude_offset) > 0.5:
+                calc.altitude_offset = state.altitude_offset
+
+            # Update leader position (flying in circle)
             angle_rad = math.radians(angle_deg)
             dlat = (radius * math.cos(angle_rad)) / 111320.0
             dlon = (radius * math.sin(angle_rad)) / (111320.0 * math.cos(math.radians(home_lat)))
@@ -271,7 +304,7 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
 
             targets = calc.compute_targets(leader, follower_ids)
 
-            # Update shared state
+            # Update shared state for web UI
             state.leader = {
                 "lat": leader.position.lat,
                 "lon": leader.position.lon,
@@ -293,10 +326,16 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
                     "distance": dist,
                     "bearing": bear,
                     "status": "following",
+                    "offset_right": t.offset.offset_right,
+                    "offset_behind": t.offset.offset_behind,
+                    "offset_above": t.offset.offset_above,
                 })
             state.followers = followers
             state.last_update = time.time()
-            state.uptime = time.time() - (state.last_update - 10)  # approximate
+            state.uptime = time.time() - start_time
+            state.formation_type = calc.formation_type.value
+            state.formation_spacing = calc.spacing
+            state.altitude_offset = calc.altitude_offset
 
             # Push to web clients
             app.broadcast_update()
@@ -316,7 +355,7 @@ def run_web_demo(host: str = "0.0.0.0", port: int = 5000):
     print(f"  🌐 Browser öffnen: http://localhost:{port}")
     print(f"  📡 Simulierter Leader fliegt Kreis um Berlin")
     print(f"  🛩️  3 Follower in V-Formation")
-    print(f"  🔀 Formation wechselbar im Dashboard")
+    print(f"  🔀 Formation & Spacing im Dashboard änderbar!")
     print()
     print("  Strg+C zum Beenden")
     print()
