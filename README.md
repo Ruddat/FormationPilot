@@ -1,23 +1,43 @@
-# FormationPilot ✈️
+<div align="center">
 
-**Platform-Agnostic Formation Flight Engine for INAV & ArduPilot**
+# ✈️ FormationPilot
+
+### Platform-Agnostic Formation Flight Engine for INAV & ArduPilot
+
+**Leader-Follower Formationsflug-System** mit Lora-Funkverbindung und Live-Web-Dashboard
 
 *by aeroFun Fpv Ingo Ruddat*
 
-Leader-Follower Formationsflug-System mit Lora-Funkverbindung und Live-Web-Dashboard. Der Leader fliegt normal, die Follower empfangen ihre Zielposition per Funk und folgen automatisch.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?logo=python&logoColor=white)](https://python.org)
+[![PlatformIO](https://img.shields.io/badge/ESP32-PlatformIO-orange?logo=platformio)](https://platformio.org)
+[![INAV](https://img.shields.io/badge/FC-INAV-green)](https://github.com/iNavFlight/inav)
+[![ArduPilot](https://img.shields.io/badge/FC-ArduPilot-red)](https://ardupilot.org)
 
-## Architektur
+[Features](#-features) • [Quick Start](#-quick-start) • [Wiring](#-wiring-diagrams) • [Dashboard](#-web-dashboard) • [Firmware](#-esp32-follower-firmware) • [Protocol](#-lora-protokoll)
+
+</div>
+
+---
+
+![FormationPilot Web Dashboard](docs/dashboard_screenshot.png)
+
+---
+
+## Wie es funktioniert
+
+Der Leader fliegt normal, die Follower empfangen ihre Zielposition per 433MHz Lora-Funk und folgen automatisch in wählbarer Formation. Ein Live-Dashboard auf dem Raspberry Pi zeigt alle Flugzeuge auf der Karte und ermöglicht Formation-Wechsel im Flug.
 
 ```
 ┌──────────────────────────────────────────────┐
-│              LEADER (Flugzeug 1)               │
-│  ┌──────────┐  ┌──────────────┐  ┌────────┐  │
-│  │ INAV oder │─>│ Raspberry Pi │─>│  Lora  │  │
-│  │ArduPilot  │  │ Formation    │  │ Sender │  │
-│  │   FC      │  │ Engine       │  │        │  │
-│  └──────────┘  │  + Web UI    │  └───┬────┘  │
-│                └──────────────┘      │       │
-└─────────────────────────────────────┼───────┘
+│              LEADER (Flugzeug 1)              │
+│  ┌──────────┐  ┌──────────────┐  ┌────────┐ │
+│  │ INAV oder │─>│ Raspberry Pi │─>│  Lora  │ │
+│  │ArduPilot  │  │ Formation    │  │ Sender │ │
+│  │   FC      │  │ Engine       │  │        │ │
+│  └──────────┘  │  + Web UI    │  └───┬────┘ │
+│                └──────────────┘      │      │
+└─────────────────────────────────────┼──────┘
                                       │ Lora 433MHz
            ┌──────────────────────────┼──────────────┐
            ▼                          ▼              ▼
@@ -30,64 +50,21 @@ Leader-Follower Formationsflug-System mit Lora-Funkverbindung und Live-Web-Dashb
     📱 Handy/Laptop ── WiFi ──> Pi Web Dashboard (Port 5000)
 ```
 
-## Features
+## ✨ Features
 
-- **INAV + ArduPilot Support** – Auto-Detection der FC-Firmware
-- **6 Formationstypen** – V-Shape, Line, Echelon L/R, Circle, Custom
-- **Lora Funkverbindung** – Bis zu 3km Reichweite (SF7), 10km (SF12)
-- **Kompaktes Protokoll** – ~54 Bytes für Leader + 3 Follower
-- **Failsafe-System** – Link-Lost → RTH, Geo-Fence, Min/Max-Distanz
-- **Runtime Formation-Wechsel** – Formationstyp im Flug änderbar
-- **MAVLink + MSP** – MAVLink für Position, MSP für INAV-Befehle
-- **Web Dashboard** – Live-Karte mit Flugzeug-Icons, Formation-Controls, Failsafe-Status
-- **Interaktiver Demo-Modus** – Ohne Hardware testbar
+| Kategorie | Feature |
+|-----------|---------|
+| **FC Support** | INAV + ArduPilot – Auto-Detection der FC-Firmware |
+| **Formationen** | 6 Typen: V-Shape, Line, Echelon L/R, Circle, Custom |
+| **Funkverbindung** | Lora 433MHz – Bis 3km (SF7), 10km (SF12) |
+| **Protokoll** | Kompakt: ~54 Bytes für Leader + 3 Follower |
+| **Failsafe** | Link-Lost → RTH, Geo-Fence, Min/Max-Distanz |
+| **Runtime** | Formationstyp im Flug änderbar |
+| **Protokolle** | MAVLink für Position, MSP für INAV-Befehle |
+| **Dashboard** | Live-Karte mit Flugzeug-Icons, Formation-Controls, Failsafe-Status |
+| **Demo** | Interaktiver Modus – Ohne Hardware testbar |
 
-## Projektstruktur
-
-```
-formation_pilot/
-├── main.py                     # Entry Point (Demo + Web + Engine)
-├── config.yaml                 # Konfiguration
-├── requirements.txt            # Python Dependencies
-├── README.md                   # Diese Datei
-├── formation/                  # Python Leader-Engine
-│   ├── __init__.py
-│   ├── formations.py           # Formation Calculator (Offset-Mathematik)
-│   ├── mavlink_adapter.py      # MAVLink Kommunikation
-│   ├── msp_adapter.py          # MSP Kommunikation (INAV)
-│   ├── fc_adapter.py           # Unified FC Interface + Auto-Detection
-│   ├── lora_broadcaster.py     # Lora Funkprotokoll
-│   ├── failsafe.py             # Failsafe Manager
-│   └── formation_engine.py     # Main Engine (Orchestrierung)
-├── web/                        # Web Dashboard
-│   ├── __init__.py             # Flask Web App + API
-│   ├── app.py                  # Standalone Web Start
-│   └── templates/
-│       └── index.html          # Dashboard (Karte + Controls)
-└── firmware/                   # ESP32 Follower Firmware
-    ├── platformio.ini          # PlatformIO Projekt-Konfiguration
-    ├── include/
-    │   ├── config.h            # Pin-Definitionen, Konstanten
-    │   ├── packet_protocol.h   # Binäres Lora-Protokoll (Python-kompatibel)
-    │   ├── lora_radio.h        # Lora Radio Treiber (SX1278)
-    │   ├── fc_comms.h          # FC Kommunikation (MAVLink + MSP)
-    │   ├── failsafe.h          # Failsafe Handler
-    │   ├── led_handler.h       # Status-LED Controller
-    │   └── nvs_config.h        # NVS Konfigurationsspeicher
-    └── src/
-        ├── main.cpp            # Hauptprogramm + State Machine
-        ├── lora_radio.cpp      # Lora Treiber Implementierung
-        ├── fc_comms.cpp        # FC Kommunikation Implementierung
-        ├── failsafe.cpp        # Failsafe Logik
-        ├── led_handler.cpp     # LED-Muster Implementierung
-        └── nvs_config.cpp      # NVS Lese/Schreib-Logik
-```
-
-## Dashboard Screenshot
-
-![FormationPilot Web Dashboard](docs/dashboard_screenshot.png)
-
-## Quick Start
+## 🚀 Quick Start
 
 ### 1. Projekt klonen
 
@@ -100,27 +77,25 @@ cd FormationPilot
 
 ```bash
 python -m venv venv
-
 # Windows
 .\venv\Scripts\activate
 # Mac/Linux
 source venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-### 3. Web-Demo starten (empfohlen!)
+### 3. Web-Demo starten 🎮
 
 ```bash
 python main.py --web
 ```
 
 Dann Browser auf **http://localhost:5000** – du siehst:
-- Live-Karte mit animierten Flugzeug-Icons (Leader fliegt Kreis)
-- 3 Follower in Formation mit gestrichelten Verbindungslinien
-- Formation-Typ live wechselbar (V-Shape, Line, Echelon, Kreis)
-- Spacing und Höhen-Offset per Slider einstellbar
-- Failsafe-Status und Notfall-Buttons (HOLD, RTH, LAND)
+- 🗺️ Live-Karte mit animierten Flugzeug-Icons (Leader fliegt Kreis)
+- ✈️ 3 Follower in Formation mit gestrichelten Verbindungslinien
+- 🔀 Formation-Typ live wechselbar (V-Shape, Line, Echelon, Kreis)
+- 🎚️ Spacing und Höhen-Offset per Slider einstellbar
+- 🛡️ Failsafe-Status und Notfall-Buttons (HOLD, RTH, LAND)
 
 ### 4. Terminal-Demo (alternativ)
 
@@ -128,40 +103,24 @@ Dann Browser auf **http://localhost:5000** – du siehst:
 python main.py --demo
 ```
 
-Interaktiver Modus mit Tastatursteuerung:
-- `[1]`-`[6]` Formation wechseln
-- `[+]`/`[-]` Spacing ändern
-- `[a]`/`[z]` Höhen-Offset
-- `[q]` Beenden
+Tastatursteuerung: `[1]`-`[6]` Formation | `[+]`/`[-]` Spacing | `[a]`/`[z]` Höhe | `[q]` Beenden
 
 ### 5. Echter Flugbetrieb (Raspberry Pi)
 
-1. **Hardware verkabeln:**
-   - FC UART → Pi `/dev/serial0` (MAVLink, 57600 baud)
-   - Lora Modul → Pi `/dev/serial1` (9600 baud)
-   - Pi Stromversorgung (5V, 2A+)
-
-2. **Konfiguration anpassen:**
-   ```bash
-   nano config.yaml
-   ```
-
-3. **Engine starten:**
-   ```bash
-   python3 main.py config.yaml
-   ```
-
+1. **Hardware verkabeln** – Siehe [Wiring Diagrams](#wiring-diagrams)
+2. **Konfiguration anpassen:** `nano config.yaml`
+3. **Engine starten:** `python3 main.py config.yaml`
 4. **Dashboard öffnen:** Handy-Browser → `http://<pi-ip>:5000`
 
-## Web Dashboard
+## 📊 Web Dashboard
 
-Das Dashboard läuft auf dem Pi und ist von jedem Gerät im selben WLAN erreichbar:
+Das Dashboard läuft auf dem Pi und ist von jedem Gerät im WLAN erreichbar:
 
 | Feature | Beschreibung |
 |---------|-------------|
 | 🗺️ **Live-Karte** | Leaflet.js mit Flugzeug-SVG-Icons, Heading-Rotation, Trail |
 | 🔀 **Formation-Selector** | 6 Formationen per Klick wechseln |
-| 🎚️ **Spacing-Slider** | 5m bis 100m Abstand einstellen |
+| 🎚️ **Spacing-Slider** | 5m bis 100m Abstand einstellbar |
 | 🎚️ **Höhen-Offset** | ±50m Höhenversatz |
 | 🛩️ **Follower-Cards** | Distanz, Peilung, Offset pro Follower |
 | 🛡️ **Failsafe-Status** | Lora, GPS, Geo-Fence, Abstand |
@@ -169,33 +128,44 @@ Das Dashboard läuft auf dem Pi und ist von jedem Gerät im selben WLAN erreichb
 | 📱 **Responsive** | Dark Theme, Handy-tauglich |
 | ⚡ **Real-Time** | WebSocket Updates (5Hz) |
 
-## FC Konfiguration
+## 🔌 Wiring Diagrams
 
-### INAV
+> **Interaktive Version:** [docs/wiring.html](docs/wiring.html) – Im Browser öffnen für Fritzing-Style SVGs mit Pin-Tabellen und BOM!
 
-1. **MAVLink aktivieren:**
-   - CLI: `serial X 2 115200 57600 0 115200`
-   - Oder Configurator: Serial → Port X → MAVLink
+### Leader (Raspberry Pi)
 
-2. **Navigation:**
-   - WP Mode aktivieren (NAV WP in Modes Tab)
-   - GPS 3D-Fix erforderlich
-   - RTH als Failsafe
+![Leader Wiring Diagram](docs/wiring_leader.svg)
 
-3. **Failsafe:**
-   - Failsafe → RTH (nicht DROP oder LAND)
+| Verbindung | Pi Pin | FC / Lora Pin | Kabel |
+|-----------|--------|---------------|-------|
+| MAVLink TX | GPIO 14 (TXD) | FC RX | 🔴 Rot |
+| MAVLink RX | GPIO 15 (RXD) | FC TX | 🔵 Blau |
+| Lora TX | GPIO 4 (TXD1) | Lora RX | 🟣 Lila |
+| Lora RX | GPIO 5 (RXD1) | Lora TX | 🟣 Lila |
+| Lora Power | 3.3V | Lora VCC | 🟡 Gelb |
+| GND | GND | Lora + FC GND | ⚪ Grau |
 
-### ArduPilot
+### Follower (ESP32)
 
-1. **MAVLink aktivieren:**
-   - SERIALX_PROTOCOL = 1 (MAVLink v1) oder 2 (MAVLink v2)
-   - SERIALX_BAUD = 57 (57600)
+![Follower Wiring Diagram](docs/wiring_follower.svg)
 
-2. **NAV/RTL:**
-   - RTL als Failsafe-Action
-   - GPS → 3D Fix erforderlich
+| Gruppe | Verbindung | ESP32 Pin | Ziel | Kabel |
+|--------|-----------|-----------|------|-------|
+| **SPI** | Lora SCK | GPIO 18 | SX1278 SCK | 🟣 Lila |
+| | Lora MISO | GPIO 19 | SX1278 MISO | 🟣 Lila |
+| | Lora MOSI | GPIO 23 | SX1278 MOSI | 🟣 Lila |
+| | Lora NSS | GPIO 5 | SX1278 CS | 🟣 Lila |
+| | Lora RST | GPIO 14 | SX1278 RST | 🟣 Lila |
+| | Lora IRQ | GPIO 2 | SX1278 DIO0 | 🟠 Orange |
+| **UART1** | FC TX | GPIO 17 | FC RX | 🔴 Rot |
+| | FC RX | GPIO 16 | FC TX | 🔵 Blau |
+| **LEDs** | LINK | GPIO 25 | LED Grün + 220Ω | 🟢 Grün |
+| | FC | GPIO 26 | LED Blau + 220Ω | 🔵 Blau |
+| | GPS | GPIO 27 | LED Weiß + 220Ω | ⚪ Weiß |
+| | ERR | GPIO 32 | LED Rot + 220Ω | 🔴 Rot |
+| **Config** | Button | GPIO 33 | Taste → GND | 🟠 Orange |
 
-## Formationstypen
+## 🔀 Formationstypen
 
 ### V-Shape (Standard)
 ```
@@ -207,33 +177,17 @@ Das Dashboard läuft auf dem Pi und ist von jedem Gerät im selben WLAN erreichb
          F3
 ```
 
-### Line
+### Line / Echelon / Circle
 ```
-    LEADER
-      |
-     F1
-      |
-     F2
-      |
-     F3
+Line:          Echelon R:       Circle:
+  LEADER         LEADER          F2
+    |               F1        F3    F1
+   F1                 F2     LEADER
+    |                   F3       F4
+   F2
+    |
+   F3
 ```
-
-### Echelon Right/Left
-```
-    LEADER
-       F1
-          F2
-             F3
-```
-
-### Circle
-```
-       F2
-    F3    F1
-    LEADER
-       F4
-```
-Kreis rotiert mit dem Leader-Heading.
 
 ### Custom
 Frei definierbare Offsets pro Follower in `config.yaml`:
@@ -245,7 +199,7 @@ followers:
     offset_above: 0      # Meter über (negativ = unter)
 ```
 
-## Lora Protokoll
+## 📡 Lora Protokoll
 
 ### Paketstruktur
 ```
@@ -263,11 +217,9 @@ followers:
 | Heading | cdeg (uint16) | 0-360° | 0.01° |
 | Speed | dm/s (uint8) | 0-25.5 m/s | 0.1 m/s |
 
-### Paket-Beispiel (Leader + 3 Follower)
-- Header: 4 Bytes | Leader: 16 Bytes | 3 Follower: 33 Bytes | CRC: 1 Byte
-- **Total: 54 Bytes** (passt in ein Lora-Paket)
+**Total: 54 Bytes** für Leader + 3 Follower (passt in ein Lora-Paket)
 
-## Failsafe System
+## 🛡️ Failsafe System
 
 | Bedingung | Schwellwert | Aktion |
 |-----------|-------------|--------|
@@ -277,68 +229,95 @@ followers:
 | Follower zu nah | 10m | **WARN** |
 | Geo-Fence verletzt | 500m | **RTH** |
 | Leader zu schnell | 25 m/s | **WARN** |
-| Höhenabweichung | 30m | **WARN** |
 | GPS schwach | <6 Sats | **WARN** |
 
-Die FC-eigenen Failsafes (RTH, GPS-Failsafe) greifen IMMER zusätzlich und haben Priorität!
+> ⚠️ Die FC-eigenen Failsafes (RTH, GPS-Failsafe) greifen IMMER zusätzlich und haben Priorität!
 
-## Hardware
+## ⚙️ FC Konfiguration
 
-### Leader
-| Komponente | Empfehlung | Preis |
-|-----------|-----------|-------|
-| Companion Computer | Raspberry Pi Zero 2W | ~15€ |
-| Lora Modul | SX1278 / RFM95W 433MHz | ~5€ |
-| Kabel | JST-SH 1.0mm | ~3€ |
+### INAV
+1. **MAVLink aktivieren:** CLI `serial X 2 115200 57600 0 115200` oder Configurator → Serial → MAVLink
+2. **Navigation:** WP Mode aktivieren, GPS 3D-Fix erforderlich, RTH als Failsafe
+3. **Failsafe:** Failsafe → RTH (nicht DROP oder LAND)
 
-### Follower
-| Komponente | Empfehlung | Preis |
-|-----------|-----------|-------|
-| MCU | ESP32 + Lora (TTGO Lora32) | ~8€ |
-| Alternativ | ESP32 + separates Lora-Modul | ~10€ |
+### ArduPilot
+1. **MAVLink aktivieren:** `SERIALX_PROTOCOL = 1/2`, `SERIALX_BAUD = 57`
+2. **NAV/RTL:** RTL als Failsafe-Action, GPS → 3D Fix erforderlich
 
-### Wiring Diagrams
+## 🤖 ESP32 Follower Firmware
 
-> **Interaktive Version:** [docs/wiring.html](docs/wiring.html) – Im Browser öffnen für Fritzing-Style SVGs mit Pin-Tabellen und BOM!
+Die Firmware läuft auf jedem Follower-Modul (ESP32 + SX1278 Lora) und empfängt
+Formation-Positionsdaten vom Leader. Sie extrahiert die eigene Zielposition,
+sendet Navigationskommandos an den Flight Controller und überwacht die Verbindungsqualität.
 
-#### Leader (Raspberry Pi)
-![Leader Wiring Diagram](docs/wiring_leader.svg)
+### State Machine
+```
+INIT ──> WAITING_LINK ──> FORMATION <──> HOLD
+              |               |    |         |
+              v               v    v         v
+           FAILSAFE         RTH  LAND    (CMD_RESUME)
+```
 
-| Verbindung | Pi Pin | FC / Lora Pin | Kabel |
-|-----------|--------|---------------|-------|
-| MAVLink TX | GPIO 14 (TXD) | FC RX | Rot |
-| MAVLink RX | GPIO 15 (RXD) | FC TX | Blau |
-| Lora TX | GPIO 4 (TXD1) | Lora RX | Rot |
-| Lora RX | GPIO 5 (RXD1) | Lora TX | Blau |
-| Lora Power | 3.3V | Lora VCC | Gelb |
-| Lora GND | GND | Lora GND | Grau |
+### Firmware bauen und flashen
 
-#### Follower (ESP32)
-![Follower Wiring Diagram](docs/wiring_follower.svg)
+```bash
+pip install platformio
+cd firmware
+pio run                  # Kompilieren
+pio run --target upload  # Auf ESP32 flashen
+pio device monitor       # Serial Monitor
+```
 
-| Verbindung | ESP32 Pin | Ziel Pin | Kabel |
-|-----------|-----------|----------|-------|
-| FC TX | GPIO 17 (TX1) | FC RX | Rot |
-| FC RX | GPIO 16 (RX1) | FC TX | Blau |
-| Lora SCK | GPIO 18 | Lora SCK | Lila |
-| Lora MISO | GPIO 19 | Lora MISO | Lila |
-| Lora MOSI | GPIO 23 | Lora MOSI | Lila |
-| Lora NSS | GPIO 5 | Lora CS | Lila |
-| Lora RST | GPIO 14 | Lora RST | Lila |
-| Lora IRQ | GPIO 2 | Lora DIO0 | Orange |
-| LED LINK | GPIO 25 | LED Grün (220Ω) | Grün |
-| LED FC | GPIO 26 | LED Blau (220Ω) | Blau |
-| LED GPS | GPIO 27 | LED Weiß (220Ω) | Weiß |
-| LED ERR | GPIO 32 | LED Rot (220Ω) | Rot |
-| Config Button | GPIO 33 | Taste → GND | Orange |
+### NVS Konfiguration
 
-## API Endpunkte
+| Key | Default | Beschreibung |
+|-----|---------|-------------|
+| `f_id` | 1 | Follower ID (1-255) |
+| `fc_type` | 0 (auto) | FC Typ: 0=Auto, 1=INAV, 2=ArduPilot |
+| `l_freq` | 433125 | Lora Frequenz (433.125 MHz) |
+| `l_sf` | 7 | Spreading Factor (7-12) |
+| `l_pwr` | 20 | TX Power (dBm) |
+| `fc_baud` | 57600 | FC Baudrate |
 
-Das Web-Dashboard nutzt folgende REST-API:
+Config-Modus: Beim Start GPIO 33 (Config-Button) gedrückt halten.
+
+## 💰 Hardware-Kosten
+
+| Rolle | Komponenten | Preis |
+|-------|------------|-------|
+| **Leader** | Raspberry Pi Zero 2W + Lora SX1278 + Kabel | ~34 EUR |
+| **Follower** | TTGO Lora32 V2.1 (ESP32+Lora integriert) | ~15 EUR |
+| **4er-Team** | 1x Leader + 3x Follower | **~79 EUR** |
+
+## 🗂️ Projektstruktur
+
+```
+FormationPilot/
+├── main.py                     # Entry Point (Demo + Web + Engine)
+├── config.yaml                 # Konfiguration
+├── requirements.txt            # Python Dependencies
+├── formation/                  # Python Leader-Engine
+│   ├── formations.py           # Formation Calculator
+│   ├── mavlink_adapter.py      # MAVLink Kommunikation
+│   ├── msp_adapter.py          # MSP Kommunikation (INAV)
+│   ├── fc_adapter.py           # Unified FC Interface + Auto-Detection
+│   ├── lora_broadcaster.py     # Lora Funkprotokoll
+│   ├── failsafe.py             # Failsafe Manager
+│   └── formation_engine.py     # Main Engine
+├── web/                        # Web Dashboard
+│   ├── __init__.py             # Flask Web App + API
+│   └── templates/index.html   # Dashboard (Karte + Controls)
+└── firmware/                   # ESP32 Follower Firmware
+    ├── platformio.ini          # PlatformIO Konfiguration
+    ├── include/                # Header (config, protocol, drivers)
+    └── src/                    # Source (main, lora, fc, failsafe, led, nvs)
+```
+
+## 🔌 API Endpunkte
 
 | Endpoint | Methode | Beschreibung |
 |----------|---------|-------------|
-| `/api/state` | GET | Aktueller Formation-Status (JSON) |
+| `/api/state` | GET | Aktueller Formation-Status |
 | `/api/formations` | GET | Verfügbare Formationstypen |
 | `/api/formation/change` | POST | Formation wechseln |
 | `/api/follower/<id>/command` | POST | Befehl an Follower |
@@ -347,132 +326,28 @@ Das Web-Dashboard nutzt folgende REST-API:
 
 WebSocket Events: `state_update`, `formation_changed`
 
-## ESP32 Follower Firmware
+## 📋 Roadmap
 
-Die Firmware läuft auf jedem Follower-Modul (ESP32 + SX1278 Lora) und empfängt
-Formation-Positionsdaten vom Leader. Sie extrahiert die eigene Zielposition,
-sendet Navigationskommandos an den Flight Controller und überwacht die
-Verbindungsqualität.
+- [x] ESP32 Follower Firmware – PlatformIO Projekt mit State Machine
+- [x] Wiring Diagrams – Interaktive Fritzing-Style Pläne ([wiring.html](docs/wiring.html))
+- [x] Web Dashboard – Live-Karte mit Formation-Controls
+- [ ] Integrationstests – Mit realen INAV/AP Flight Controllern
+- [ ] Lora Module Konfiguration – AT-Command Setup automatisieren
+- [ ] Serial Config Interface – ESP32 Konfiguration per UART
+- [ ] RSSI-basierte Reichweitenwarnung – Signalqualität im Dashboard
+- [ ] OTA Updates – Firmware-Update über WiFi
+- [ ] Video-Tutorial – Setup und Erstflug-Doku
 
-### Hardware (pro Follower)
-
-| Komponente | Empfehlung | Preis |
-|-----------|-----------|-------|
-| MCU | ESP32-WROOM-32 DevKit | ~5€ |
-| Lora | SX1278 / RFM95W 433MHz | ~5€ |
-| Alternativ | TTGO Lora32 V2.1 (ESP32+Lora integriert) | ~8€ |
-| LEDs | 4x 5mm (grün, blau, weiß, rot) + 220 Ohm | ~1€ |
-| Kabel | JST-SH 1.0mm, Dupont | ~2€ |
-
-### Pin-Belegung (ESP32)
-
-```
-Lora Modul (SX1278 via SPI):
-  ESP32 GPIO 18 (SCK)  ──── Lora SCK
-  ESP32 GPIO 19 (MISO) ──── Lora MISO
-  ESP32 GPIO 23 (MOSI) ──── Lora MOSI
-  ESP32 GPIO 5  (NSS)  ──── Lora CS
-  ESP32 GPIO 14 (RST)  ──── Lora RST
-  ESP32 GPIO 2  (DIO0) ──── Lora DIO0 (IRQ)
-
-Flight Controller (Serial1):
-  ESP32 GPIO 17 (TX)   ──── FC RX (MAVLink/MSP)
-  ESP32 GPIO 16 (RX)   ──── FC TX (MAVLink/MSP)
-
-Status LEDs (active HIGH, über 220 Ohm Vorwiderstand):
-  ESP32 GPIO 25 ──── LED LINK (grün)  – Lora-Verbindung aktiv
-  ESP32 GPIO 26 ──── LED FC   (blau)  – FC verbunden
-  ESP32 GPIO 27 ──── LED GPS  (weiß)  – GPS-Fix
-  ESP32 GPIO 32 ──── LED ERR  (rot)   – Fehler / Failsafe
-
-Config Button (active LOW, intern Pullup):
-  ESP32 GPIO 33 ──── Taste (nach GND) – Config-Modus beim Start
-```
-
-### Firmware bauen und flashen
-
-```bash
-# PlatformIO installieren (falls nicht vorhanden)
-pip install platformio
-
-# Ins Firmware-Verzeichnis wechseln
-cd firmware
-
-# Kompilieren
-pio run
-
-# Auf ESP32 flashen (USB-Kabel)
-pio run --target upload
-
-# Serial Monitor (Debug-Ausgabe)
-pio device monitor
-```
-
-### State Machine
-
-```
-INIT ──> WAITING_LINK ──> FORMATION <──> HOLD
-              |               |    |         |
-              v               v    v         v
-           FAILSAFE         RTH  LAND    (CMD_RESUME)
-```
-
-| State | Beschreibung |
-|-------|-------------|
-| INIT | Hardware-Initialisierung (Lora, FC, NVS) |
-| WAITING_LINK | Warten auf erstes Lora-Paket vom Leader |
-| FORMATION | Normalbetrieb – 5Hz Position-Targets an FC |
-| HOLD | Position halten (HOLD-Kommando oder Failsafe) |
-| RTH | Return To Home (Kommando oder Link-Verlust) |
-| LANDING | Landung (LAND-Kommando) |
-| FAILSAFE | Fehlerzustand – automatisch RTH oder LAND |
-
-### Failsafe-Hierarchie
-
-| Priorität | Bedingung | Aktion |
-|-----------|-----------|--------|
-| 1 (höchste) | FC getrennt (>10s) | LAND |
-| 2 | Lora Link verloren (>3s) | HOLD → RTH → LAND |
-| 3 | Kein GPS-Fix | WARN |
-| 4 | Zu weit vom Leader (>100m) | HOLD / RTH |
-| 5 | Geo-Fence (>500m) | RTH |
-| 6 | Zu nah am Leader (<5m) | WARN |
-
-### NVS Konfiguration
-
-Die Firmware speichert Einstellungen im ESP32 NVS (Non-Volatile Storage).
-Beim ersten Start werden Defaults verwendet:
-
-| Key | Default | Beschreibung |
-|-----|---------|-------------|
-| `f_id` | 1 | Follower ID (1-255) |
-| `fc_type` | 0 (auto) | FC Typ: 0=Auto, 1=INAV, 2=ArduPilot |
-| `l_freq` | 433125 | Lora Frequenz (×1000, = 433.125 MHz) |
-| `l_sf` | 7 | Spreading Factor (7-12) |
-| `l_pwr` | 20 | TX Power (dBm) |
-| `fc_baud` | 57600 | FC Baudrate |
-
-Config-Modus: Beim Start GPIO 33 (Config-Button) gedrückt halten.
-
-### Protokoll-Kompatibilität
-
-Die Firmware verwendet exakt dasselbe binäre Lora-Protokoll wie die
-Python-Engine (`formation/lora_broadcaster.py`):
-- Gleicher Header (0xAA + TYPE + SEQ + LEN + PAYLOAD + CRC8)
-- Gleiche Encoding (Lat/Lon ×1e7, Alt ×10, Heading ×100, Speed ×10)
-- Gleiche CRC-8/MAXIM Berechnung (Polynom 0x31)
-- ACK-Pakete werden zurück an den Leader gesendet
-
-## Nächste Schritte
-
-- [x] **ESP32 Follower Firmware** – PlatformIO Projekt mit State Machine
-- [ ] **Integrationstests** – Mit realen INAV/AP Flight Controllern
-- [ ] **Lora Module Konfiguration** – AT-Command Setup automatisieren
-- [x] **Wiring Diagrams** – Interaktive Fritzing-Style Pläne ([wiring.html](docs/wiring.html))
-- [ ] **Video-Tutorial** – Setup und Erstflug-Doku
-- [ ] **OTA Updates** – Firmware-Update über WiFi
-- [ ] **RSSI-basierte Reichweitenwarnung** – Signalqualität im Dashboard
-
-## Lizenz
+## 📄 Lizenz
 
 MIT License – Frei nutzbar und modifizierbar.
+
+---
+
+<div align="center">
+
+**[⬆ Nach oben](#-formationpilot)**
+
+Made with ✈️ by aeroFun Fpv Ingo Ruddat
+
+</div>
