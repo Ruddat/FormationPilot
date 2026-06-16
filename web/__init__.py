@@ -57,6 +57,9 @@ class WebState:
     lora_stats: Optional[dict] = None
     fc_type: str = "unknown"
     last_update: float = 0.0
+    # v2.0: Leader Election
+    leader_election: Optional[dict] = None
+    ground_station_mode: bool = True
 
 
 class FormationWebApp:
@@ -207,7 +210,35 @@ class FormationWebApp:
                 "altitude_offset": self.state.altitude_offset,
                 "fc_type": self.state.fc_type,
                 "engine_state": self.state.engine_state,
+                "ground_station_mode": self.state.ground_station_mode,
             })
+
+        # v2.0: Leader Election API
+        @self.app.route("/api/leader/select", methods=["POST"])
+        def select_leader():
+            """Manually select a new leader aircraft."""
+            data = request.json or {}
+            aircraft_id = data.get("aircraft_id")
+
+            if aircraft_id is None:
+                return jsonify({"error": "aircraft_id required"}), 400
+
+            if "select_leader" in self.engine_callback:
+                success = self.engine_callback["select_leader"](int(aircraft_id))
+                if success:
+                    logger.info(f"Leader manually changed to aircraft {aircraft_id}")
+                    return jsonify({"status": "ok", "leader_id": aircraft_id})
+                else:
+                    return jsonify({"error": "Failed to select leader"}), 400
+
+            return jsonify({"error": "Leader election not available"}), 503
+
+        @self.app.route("/api/leader/status", methods=["GET"])
+        def get_leader_status():
+            """Get leader election status."""
+            if self.state.leader_election:
+                return jsonify(self.state.leader_election)
+            return jsonify({"error": "Leader election not available"}), 503
 
     def _register_socket_events(self):
         """Register Socket.IO event handlers."""

@@ -16,7 +16,7 @@
 // ============================================================================
 // Firmware Version
 // ============================================================================
-constexpr uint8_t FIRMWARE_VERSION_MAJOR = 1;
+constexpr uint8_t FIRMWARE_VERSION_MAJOR = 2;
 constexpr uint8_t FIRMWARE_VERSION_MINOR = 0;
 constexpr uint8_t FIRMWARE_VERSION_PATCH = 0;
 
@@ -172,12 +172,28 @@ enum SystemState : uint8_t {
     STATE_CONFIG,         // Configuration mode (button held on boot)
     STATE_WAITING_LINK,   // Waiting for first Lora packet from leader
     STATE_FORMATION,      // Normal formation flight
+    STATE_LEADER,         // v2.0: This aircraft IS the leader
     STATE_HOLD,           // Holding position (HOLD command received)
     STATE_RTH,            // Returning to home
     STATE_LANDING,        // Landing
     STATE_FAILSAFE,       // Failsafe triggered (link lost)
     STATE_ERROR,          // Critical error
 };
+
+// ============================================================================
+// v2.0: Leader Announce Reason (matches Python LeaderAnnounceReason)
+// ============================================================================
+enum LeaderAnnounceReason : uint8_t {
+    LEADER_CHANGE_MANUAL      = 0x01,
+    LEADER_CHANGE_AUTO_FAILOVER = 0x02,
+    LEADER_CHANGE_TIMEOUT     = 0x03,
+    LEADER_CHANGE_NO_LEADER   = 0x04,
+};
+
+// ============================================================================
+// v2.0: Position Report Timing
+// ============================================================================
+constexpr uint32_t POSITION_REPORT_INTERVAL_MS = 200;  // Send own position at 5Hz
 
 // ============================================================================
 // Timing Constants

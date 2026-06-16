@@ -418,6 +418,22 @@
             </div>
         </div>
 
+        <!-- v2.0: Leader Election -->
+        <div class="card" id="leaderElectionCard" style="display:none;">
+            <div class="card-title">👑 Leader Election</div>
+            <div style="margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                    <span style="font-size:12px; color:var(--text-dim);">Current Leader:</span>
+                    <span id="currentLeaderId" style="font-weight:700; color:var(--accent); font-size:16px;">1</span>
+                    <span id="leaderAliveBadge" class="status-badge status-running" style="font-size:10px; padding:2px 8px;">ALIVE</span>
+                </div>
+                <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
+                    Auto-Failover: <span id="autoFailoverStatus" style="color:var(--green);">ON</span>
+                </div>
+            </div>
+            <div id="leaderCandidates"></div>
+        </div>
+
     </div>
 </div>
 
@@ -637,6 +653,55 @@ function updateUI(data) {
     document.getElementById('spacingVal').textContent = (data.formation_spacing || 20) + 'm';
     document.getElementById('altOffSlider').value = data.altitude_offset || 0;
     document.getElementById('altOffVal').textContent = (data.altitude_offset || 0) + 'm';
+
+    // v2.0: Leader Election
+    if (data.leader_election) {
+        const le = data.leader_election;
+        document.getElementById('leaderElectionCard').style.display = 'block';
+        document.getElementById('currentLeaderId').textContent = le.current_leader_id;
+        document.getElementById('autoFailoverStatus').textContent = le.auto_failover ? 'ON' : 'OFF';
+
+        const badge = document.getElementById('leaderAliveBadge');
+        if (le.leader_alive) {
+            badge.textContent = 'ALIVE';
+            badge.className = 'status-badge status-running';
+        } else {
+            badge.textContent = 'DEAD';
+            badge.className = 'status-badge status-failsafe';
+        }
+
+        // Render aircraft candidates
+        let candHtml = '';
+        if (le.aircraft) {
+            Object.values(le.aircraft).forEach(ac => {
+                const isLeader = ac.is_leader;
+                const alive = ac.alive;
+                const borderColor = isLeader ? 'var(--accent)' : alive ? 'var(--border)' : 'var(--red)';
+                const bg = isLeader ? 'rgba(59,130,246,0.1)' : 'transparent';
+                candHtml += `
+                <div style="display:flex; align-items:center; justify-content:space-between;
+                     padding:6px 10px; margin-bottom:4px; border-radius:8px;
+                     border:1px solid ${borderColor}; background:${bg};">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-weight:700; font-size:14px;">${isLeader ? '👑' : '✈️'} ${ac.id}</span>
+                        <span style="font-size:10px; color:${alive ? 'var(--green)' : 'var(--red)'};">
+                            ${alive ? 'ONLINE' : 'OFFLINE'}
+                        </span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        ${ac.gps_fix ? '<span style="font-size:10px; color:var(--green);">GPS</span>' : ''}
+                        <span style="font-size:10px; color:var(--text-dim);">Sats:${ac.gps_sats}</span>
+                        ${!isLeader ? `<button onclick="selectLeader(${ac.id})" style="
+                            padding:3px 8px; border-radius:6px; border:1px solid var(--accent);
+                            background:rgba(59,130,246,0.1); color:var(--accent);
+                            font-size:10px; font-weight:600; cursor:pointer;">
+                            Make Leader</button>` : ''}
+                    </div>
+                </div>`;
+            });
+        }
+        document.getElementById('leaderCandidates').innerHTML = candHtml;
+    }
 }
 
 function setFailsafeDot(id, ok) {
@@ -705,6 +770,19 @@ function sendCommand(cmd) {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({command: cmd})
+    });
+}
+
+// v2.0: Leader selection
+function selectLeader(aircraftId) {
+    fetch('/api/leader/select', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({aircraft_id: aircraftId})
+    }).then(r => r.json()).then(d => {
+        if (d.status === 'ok') {
+            console.log('Leader changed to aircraft ' + aircraftId);
+        }
     });
 }
 

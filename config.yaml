@@ -118,3 +118,32 @@ engine:
   update_rate_hz: 5
   heartbeat_interval: 2
   enable_failsafe: true
+
+# v2.0: Ground Station + Dynamic Leader Election
+# -----------------------------------------------
+# ground_station_mode: Pi acts as ground station receiver
+#   - True:  Pi receives position reports from ALL aircraft, calculates formation,
+#            and sends targets. Any aircraft can be leader.
+#   - False: Legacy mode. Pi must be on the leader aircraft.
+#
+# leader_election:
+#   enabled: Enable/disable dynamic leader selection
+#   initial_leader_id: Which aircraft starts as leader
+#   auto_failover: Automatically switch leader when current leader dies
+#   leader_timeout_s: Seconds without position report before leader considered dead
+#   failover_delay_s: Delay before auto-failover (prevents flapping)
+#   priority_order: Aircraft IDs in leader priority order (first = highest priority)
+#   require_gps_fix: Must have GPS fix to become leader
+#   min_gps_sats: Minimum satellites for leader eligibility
+
+ground_station_mode: true
+
+leader_election:
+  enabled: true
+  initial_leader_id: 1
+  auto_failover: true
+  leader_timeout_s: 3
+  failover_delay_s: 1
+  priority_order: [1, 2, 3]
+  require_gps_fix: true
+  min_gps_sats: 6

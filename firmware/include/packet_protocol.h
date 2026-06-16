@@ -33,6 +33,8 @@ enum PacketType : uint8_t {
     PKT_COMMAND            = 0x03,  // Generic command (RTH, LAND, HOLD)
     PKT_HEARTBEAT          = 0x04,  // Leader alive, no position data
     PKT_ACK                = 0x05,  // Acknowledgment from follower
+    PKT_POSITION_REPORT    = 0x06,  // v2.0: Aircraft reports own position
+    PKT_LEADER_ANNOUNCE    = 0x07,  // v2.0: Ground station announces new leader
 };
 
 // ============================================================================

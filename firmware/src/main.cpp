@@ -67,6 +67,10 @@ uint32_t last_target_send_time = 0;
 uint32_t last_ack_send_time = 0;
 uint32_t last_stats_print_time = 0;
 uint32_t last_led_update_time = 0;
+uint32_t last_position_report_time = 0;  // v2.0: Position report timing
+
+// v2.0: Is this aircraft currently the leader?
+bool is_leader = false;
 
 // Follower targets buffer (from FORMATION_POSITION packet)
 FollowerTarget follower_targets[MAX_FOLLOWERS];
@@ -80,6 +84,8 @@ void handleFormationPosition(const ReceivedPacket& pkt);
 void handleCommand(const ReceivedPacket& pkt);
 void handleHeartbeat(const ReceivedPacket& pkt);
 void handleFormationChange(const ReceivedPacket& pkt);
+void handleLeaderAnnounce(const ReceivedPacket& pkt);  // v2.0
+void sendPositionReport();  // v2.0
 void sendAckIfNeeded();
 void updateFailsafe();
 void printStats();
@@ -176,6 +182,9 @@ void loop() {
             case PKT_FORMATION_CHANGE:
                 handleFormationChange(pkt);
                 break;
+            case PKT_LEADER_ANNOUNCE:
+                handleLeaderAnnounce(pkt);
+                break;
             case PKT_ACK:
                 // ACK from another follower - ignore
                 break;
@@ -216,6 +225,22 @@ void loop() {
                 fc.sendPositionTarget(target_position);
                 last_target_send_time = now;
             }
+            // v2.0: Also send position report to ground station
+            if (now - last_position_report_time >= POSITION_REPORT_INTERVAL_MS) {
+                sendPositionReport();
+                last_position_report_time = now;
+            }
+            break;
+        }
+
+        case STATE_LEADER: {
+            // v2.0: This aircraft IS the leader - just fly normally
+            // Send position report to ground station at 5Hz
+            if (now - last_position_report_time >= POSITION_REPORT_INTERVAL_MS) {
+                sendPositionReport();
+                last_position_report_time = now;
+            }
+            // Don't send position targets to FC - we fly freely
             break;
         }
 
@@ -299,6 +324,7 @@ void changeState(SystemState new_state) {
                   old_state == STATE_CONFIG ? "CONFIG" :
                   old_state == STATE_WAITING_LINK ? "WAITING_LINK" :
                   old_state == STATE_FORMATION ? "FORMATION" :
+                  old_state == STATE_LEADER ? "LEADER" :
                   old_state == STATE_HOLD ? "HOLD" :
                   old_state == STATE_RTH ? "RTH" :
                   old_state == STATE_LANDING ? "LANDING" :
@@ -307,6 +333,7 @@ void changeState(SystemState new_state) {
                   new_state == STATE_CONFIG ? "CONFIG" :
                   new_state == STATE_WAITING_LINK ? "WAITING_LINK" :
                   new_state == STATE_FORMATION ? "FORMATION" :
+                  new_state == STATE_LEADER ? "LEADER" :
                   new_state == STATE_HOLD ? "HOLD" :
                   new_state == STATE_RTH ? "RTH" :
                   new_state == STATE_LANDING ? "LANDING" :
@@ -412,6 +439,87 @@ void handleFormationChange(const ReceivedPacket& pkt) {
                   formation, spacing, alt_offset);
     // The new formation will be reflected in the next FORMATION_POSITION packet
     // The leader's Python engine recalculates targets and sends them
+}
+
+// ============================================================================
+// v2.0: Leader Announce Handler
+// ============================================================================
+
+void handleLeaderAnnounce(const ReceivedPacket& pkt) {
+    if (pkt.payload_len < 3) return;
+
+    uint8_t new_leader_id = pkt.payload[0];
+    uint8_t old_leader_id = pkt.payload[1];
+    uint8_t reason = pkt.payload[2];
+
+    Serial.printf("[Lora] LEADER_ANNOUNCE: %d -> %d (reason=0x%02X)\n",
+                  old_leader_id, new_leader_id, reason);
+
+    if (new_leader_id == config.follower_id) {
+        // This aircraft is now the LEADER!
+        is_leader = true;
+        changeState(STATE_LEADER);
+        Serial.println("[SYS] *** THIS AIRCRAFT IS NOW THE LEADER ***");
+    } else if (old_leader_id == config.follower_id) {
+        // We were the leader, now we're a follower
+        is_leader = false;
+        has_target = false;
+        changeState(STATE_WAITING_LINK);
+        Serial.println("[SYS] No longer leader - switching to follower mode");
+    } else {
+        // Leader changed between other aircraft
+        // Just note it, our formation targets will adjust
+        Serial.printf("[SYS] Leader changed to aircraft %d\n", new_leader_id);
+    }
+}
+
+// ============================================================================
+// v2.0: Position Report Sender
+// ============================================================================
+
+void sendPositionReport() {
+    // Build POSITION_REPORT packet with our own position
+    Position own_pos = fc.getOwnPosition();
+
+    // Only send if we have a valid position
+    if (!own_pos.isValid()) return;
+
+    uint8_t payload[18];
+    memset(payload, 0, sizeof(payload));
+
+    // Aircraft ID
+    payload[0] = config.follower_id;
+
+    // Latitude (int32, degrees * 1e7)
+    int32_t lat_e7 = (int32_t)(own_pos.lat * 1e7);
+    memcpy(&payload[1], &lat_e7, 4);
+
+    // Longitude (int32, degrees * 1e7)
+    int32_t lon_e7 = (int32_t)(own_pos.lon * 1e7);
+    memcpy(&payload[5], &lon_e7, 4);
+
+    // Altitude (uint16, decimeters)
+    uint16_t alt_dm = (uint16_t)(own_pos.alt * 10);
+    memcpy(&payload[9], &alt_dm, 2);
+
+    // Heading (uint16, centidegrees)
+    uint16_t heading_cd = 0;  // TODO: get from FC
+    memcpy(&payload[11], &heading_cd, 2);
+
+    // Speed (uint8, dm/s)
+    payload[13] = 0;  // TODO: get from FC
+
+    // Vertical speed (int16, dm/s)
+    int16_t vs_dms = 0;
+    memcpy(&payload[14], &vs_dms, 2);
+
+    // GPS sats
+    payload[16] = fc.getNumSatellites();
+
+    // GPS fix
+    payload[17] = fc.hasGpsFix() ? 0x01 : 0x00;
+
+    lora.sendRawPacket(PKT_POSITION_REPORT, payload, sizeof(payload));
 }
 
 // ============================================================================

@@ -75,6 +75,16 @@ class PacketType(IntEnum):
     COMMAND = 0x03
     HEARTBEAT = 0x04
     ACK = 0x05
+    POSITION_REPORT = 0x06   # Aircraft reports own position (v2.0)
+    LEADER_ANNOUNCE = 0x07   # Ground station announces new leader (v2.0)
+
+
+class LeaderAnnounceReason(IntEnum):
+    """Reason for leader change in LEADER_ANNOUNCE packet."""
+    MANUAL = 0x01
+    AUTO_FAILOVER = 0x02
+    LEADER_TIMEOUT = 0x03
+    NO_LEADER = 0x04
 
 
 class CommandType(IntEnum):
@@ -94,11 +104,24 @@ class FormationCommand:
 
 @dataclass
 class ReceivedPacket:
-    """Parsed received packet from leader."""
+    """Parsed received packet."""
     packet_type: PacketType
     sequence: int
     payload: bytes
     rssi: int = 0  # Signal strength (if available)
+
+
+@dataclass
+class PositionReport:
+    """Position report from an aircraft (used in ground station mode)."""
+    aircraft_id: int
+    position: Position
+    heading: float = 0.0
+    ground_speed: float = 0.0
+    vertical_speed: float = 0.0
+    gps_sats: int = 0
+    gps_fix: bool = False
+    rssi: int = 0
 
 
 class LoraBroadcaster:
@@ -272,6 +295,78 @@ class LoraBroadcaster:
         packet = self._build_packet(PacketType.HEARTBEAT, b"")
         return self._send_packet(packet)
 
+    # ========================================================================
+    # v2.0: Ground Station Mode - New packet types
+    # ========================================================================
+
+    def broadcast_position_report(self, report: PositionReport) -> bool:
+        """
+        Broadcast a POSITION_REPORT from an aircraft.
+
+        Used in ground station mode when an aircraft reports its position.
+        The ground station receives these from all aircraft and uses the
+        leader's position to calculate formation targets.
+
+        Payload structure (18 bytes):
+        ┌──────┬───────┬───────┬──────┬──────────┬────────┬────────┬──────┬──────┐
+        │ A_ID │ LAT   │ LON   │ ALT  │ HEADING  │ SPEED  │ VSPEED │ SATS │ FIX  │
+        │ 1B   │ 4B(i) │ 4B(i) │ 2B(U)│ 2B(U)   │ 1B(U)  │ 2B(i)  │ 1B   │ 1B   │
+        └──────┴───────┴───────┴──────┴──────────┴────────┴────────┴──────┴──────┘
+        """
+        if not self._serial or not self._serial.is_open:
+            return False
+
+        payload = bytearray()
+        payload.append(report.aircraft_id & 0xFF)
+
+        # Position
+        lat_e7 = int(report.position.lat * 1e7)
+        lon_e7 = int(report.position.lon * 1e7)
+        alt_dm = int(report.position.alt * 10) & 0xFFFF
+        heading_cd = int(report.heading * 100) & 0xFFFF
+        speed_dms = int(report.ground_speed * 10) & 0xFF
+        vspeed_dms = int(report.vertical_speed * 10)
+
+        payload += struct.pack("<i", lat_e7)
+        payload += struct.pack("<i", lon_e7)
+        payload += struct.pack("<H", alt_dm)
+        payload += struct.pack("<H", heading_cd)
+        payload.append(speed_dms)
+        payload += struct.pack("<h", vspeed_dms)
+        payload.append(report.gps_sats & 0xFF)
+        payload.append(0x01 if report.gps_fix else 0x00)
+
+        packet = self._build_packet(PacketType.POSITION_REPORT, bytes(payload))
+        return self._send_packet(packet)
+
+    def broadcast_leader_announce(self, new_leader_id: int,
+                                    old_leader_id: int = 0,
+                                    reason: int = LeaderAnnounceReason.MANUAL) -> bool:
+        """
+        Broadcast a LEADER_ANNOUNCE to all aircraft.
+
+        This tells all aircraft who the new leader is.
+        The new leader continues flying normally (sending POSITION_REPORTs).
+        Former leader becomes a follower.
+
+        Payload structure (4 bytes):
+        ┌────────────┬────────────┬────────┬────────┐
+        │ NEW_LEADER │ OLD_LEADER │ REASON │ RESERVED│
+        │ 1B         │ 1B         │ 1B     │ 1B      │
+        └────────────┴────────────┴────────┴────────┘
+        """
+        if not self._serial or not self._serial.is_open:
+            return False
+
+        payload = bytearray()
+        payload.append(new_leader_id & 0xFF)
+        payload.append(old_leader_id & 0xFF)
+        payload.append(reason & 0xFF)
+        payload.append(0x00)  # Reserved
+
+        packet = self._build_packet(PacketType.LEADER_ANNOUNCE, bytes(payload))
+        return self._send_packet(packet)
+
     def receive(self, timeout: float = 0.1) -> Optional[ReceivedPacket]:
         """
         Receive a packet from the Lora radio.
@@ -383,6 +478,53 @@ class LoraBroadcaster:
             command=CommandType(payload[0]),
             target_follower=payload[1]
         )
+
+    @staticmethod
+    def parse_position_report(payload: bytes) -> Optional[PositionReport]:
+        """
+        Parse a POSITION_REPORT payload (v2.0).
+
+        Expected payload: 18 bytes
+        A_ID(1) + LAT(4i) + LON(4i) + ALT(2U) + HDG(2U) + SPD(1) + VSPD(2i) + SATS(1) + FIX(1)
+        """
+        if len(payload) < 18:
+            logger.warning(f"Position report payload too short: {len(payload)} bytes")
+            return None
+
+        aircraft_id = payload[0]
+        lat_e7 = struct.unpack_from("<i", payload, 1)[0]
+        lon_e7 = struct.unpack_from("<i", payload, 5)[0]
+        alt_dm = struct.unpack_from("<H", payload, 9)[0]
+        heading_cd = struct.unpack_from("<H", payload, 11)[0]
+        speed_dms = payload[13]
+        vspeed_dms = struct.unpack_from("<h", payload, 14)[0]
+        gps_sats = payload[16]
+        gps_fix = payload[17] == 0x01
+
+        return PositionReport(
+            aircraft_id=aircraft_id,
+            position=Position(
+                lat=lat_e7 / 1e7,
+                lon=lon_e7 / 1e7,
+                alt=alt_dm / 10.0
+            ),
+            heading=heading_cd / 100.0,
+            ground_speed=speed_dms / 10.0,
+            vertical_speed=vspeed_dms / 10.0,
+            gps_sats=gps_sats,
+            gps_fix=gps_fix
+        )
+
+    @staticmethod
+    def parse_leader_announce(payload: bytes) -> Optional[Tuple[int, int, int]]:
+        """
+        Parse a LEADER_ANNOUNCE payload (v2.0).
+
+        Returns: (new_leader_id, old_leader_id, reason)
+        """
+        if len(payload) < 3:
+            return None
+        return (payload[0], payload[1], payload[2])
 
     def _build_formation_packet(self, leader: LeaderState,
                                  targets: List[FollowerTarget]) -> bytes:

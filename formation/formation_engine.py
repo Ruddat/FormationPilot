@@ -37,7 +37,11 @@ from typing import Callable, Dict, List, Optional
 from .failsafe import FailsafeAction, FailsafeManager
 from .fc_adapter import FCAdapter
 from .formations import FormationCalculator, FormationType, FollowerTarget, LeaderState, Position
-from .lora_broadcaster import CommandType, FormationCommand, LoraBroadcaster
+from .leader_election import LeaderElectionConfig, LeaderElectionManager
+from .lora_broadcaster import (
+    CommandType, FormationCommand, LeaderAnnounceReason,
+    LoraBroadcaster, PacketType, PositionReport
+)
 from .mavlink_adapter import FCType
 
 logger = logging.getLogger(__name__)
@@ -91,6 +95,10 @@ class EngineConfig:
     update_rate_hz: float = 5.0  # Target update rate
     heartbeat_interval: float = 2.0  # seconds between heartbeats
     enable_failsafe: bool = True
+
+    # v2.0: Ground Station Mode + Dynamic Leader Election
+    ground_station_mode: bool = True   # Pi acts as ground station (receives position reports)
+    leader_election: LeaderElectionConfig = field(default_factory=LeaderElectionConfig)
 
 
 @dataclass
@@ -148,6 +156,7 @@ class FormationEngine:
         self._calculator: Optional[FormationCalculator] = None
         self._lora: Optional[LoraBroadcaster] = None
         self._failsafe: Optional[FailsafeManager] = None
+        self._leader_election: Optional[LeaderElectionManager] = None
 
         # Callbacks
         self._on_update: Optional[Callable[[LeaderState, List[FollowerTarget]], None]] = None
@@ -175,6 +184,10 @@ class FormationEngine:
     @property
     def failsafe(self) -> Optional[FailsafeManager]:
         return self._failsafe
+
+    @property
+    def leader_election(self) -> Optional[LeaderElectionManager]:
+        return self._leader_election
 
     def set_on_update(self, callback: Callable[[LeaderState, List[FollowerTarget]], None]):
         """Set callback called after each update cycle with leader state and targets."""
@@ -369,36 +382,60 @@ class FormationEngine:
 
         logger.info("Failsafe manager initialized")
 
+        # 5. Leader Election Manager (v2.0)
+        if self._config.ground_station_mode:
+            self._leader_election = LeaderElectionManager(self._config.leader_election)
+            # Register all followers as aircraft
+            for i, follower_cfg in enumerate(self._config.followers):
+                fid = follower_cfg.get("id", i + 1)
+                self._leader_election.register_aircraft(fid, priority=i)
+            # Set leader change callback
+            self._leader_election.set_on_leader_change(self._on_leader_change)
+            logger.info(f"Leader election initialized: mode=ground_station, "
+                       f"leader_id={self._leader_election.current_leader_id}, "
+                       f"auto_failover={self._config.leader_election.auto_failover}")
+
         return True
 
     def _update_cycle(self):
         """
         Single update cycle of the formation engine.
 
-        Steps:
+        In Ground Station Mode (v2.0):
+        1. Receive POSITION_REPORTs from all aircraft
+        2. Update Leader Election with position data
+        3. Check leader alive
+        4. Read leader position from election manager
+        5. Compute follower targets
+        6. Broadcast formation data
+
+        In Legacy Mode:
         1. Read leader state from FC
         2. Compute follower targets
         3. Run failsafe checks
-        4. Handle any pending failsafe actions
-        5. Broadcast formation data to followers
-        6. Send periodic heartbeat
-        7. Update statistics
+        4. Broadcast formation data
         """
         if self._state == EngineState.PAUSED:
             return
 
         self._stats.update_count += 1
 
+        # ---- Ground Station Mode (v2.0) ----
+        if self._config.ground_station_mode and self._leader_election:
+            self._update_cycle_ground_station()
+            return
+
+        # ---- Legacy Mode (v1.0) ----
         # 1. Read leader state
         leader = self._fc_adapter.read_leader_state()
         if leader is None:
-            if self._stats.update_count % 50 == 0:  # Log every ~10s at 5Hz
+            if self._stats.update_count % 50 == 0:
                 logger.debug("Waiting for leader position data...")
             return
 
         self._stats.last_leader_state = leader
 
-        # Set geo-fence center on first position (home position)
+        # Set geo-fence center on first position
         if (self._failsafe and self._failsafe.geo_fence_center is None):
             self._failsafe.set_geo_fence(leader.position, self._config.geo_fence_radius)
             logger.info(f"Geo-fence centered at {leader.position.lat:.6f}, "
@@ -412,7 +449,6 @@ class FormationEngine:
         # 3. Run failsafe checks
         if self._config.enable_failsafe and self._failsafe:
             failsafe_action = self._failsafe.check(leader)
-
             if failsafe_action >= FailsafeAction.HOLD:
                 self._stats.failsafe_events += 1
                 self._pending_failsafe_action = failsafe_action
@@ -421,7 +457,6 @@ class FormationEngine:
         if self._pending_failsafe_action is not None:
             self._handle_failsafe_action(self._pending_failsafe_action)
             if self._pending_failsafe_action >= FailsafeAction.RTH:
-                # Severe failsafe: stop formation, let FC handle it
                 self._pending_failsafe_action = None
                 return
             self._pending_failsafe_action = None
@@ -451,6 +486,130 @@ class FormationEngine:
                 self._on_update(leader, targets)
             except Exception as e:
                 logger.warning(f"Update callback error: {e}")
+
+    def _update_cycle_ground_station(self):
+        """
+        Update cycle for Ground Station Mode (v2.0).
+
+        The Pi receives position reports from all aircraft, uses the
+        leader's position to compute formation targets, and broadcasts
+        them back to the followers.
+        """
+        # 1. Receive position reports from Lora
+        if self._lora and self._lora.connected:
+            for _ in range(5):  # Process up to 5 pending packets
+                pkt = self._lora.receive(timeout=0.01)
+                if pkt is None:
+                    break
+
+                if pkt.packet_type == PacketType.POSITION_REPORT:
+                    report = LoraBroadcaster.parse_position_report(pkt.payload)
+                    if report:
+                        self._leader_election.update_aircraft_position(
+                            aircraft_id=report.aircraft_id,
+                            position=report.position,
+                            heading=report.heading,
+                            ground_speed=report.ground_speed,
+                            vertical_speed=report.vertical_speed,
+                            gps_sats=report.gps_sats,
+                            gps_fix=report.gps_fix,
+                            rssi=pkt.rssi
+                        )
+                        logger.debug(f"Position report from aircraft {report.aircraft_id}")
+
+                elif pkt.packet_type == PacketType.ACK:
+                    # ACK from follower - could track link quality
+                    pass
+
+        # 2. Check leader alive
+        self._leader_election.check_leader_alive()
+
+        # 3. Get leader position
+        leader_pos = self._leader_election.get_leader_position()
+        if leader_pos is None:
+            if self._stats.update_count % 50 == 0:
+                logger.debug("Ground station: Waiting for leader position report...")
+            return
+
+        leader_heading = self._leader_election.get_leader_heading()
+        leader_speed = self._leader_election.get_leader_speed()
+
+        # 4. Build LeaderState from election data
+        leader_state = LeaderState(
+            position=leader_pos,
+            heading=leader_heading,
+            ground_speed=leader_speed,
+            vertical_speed=0.0,
+            timestamp=time.time()
+        )
+        self._stats.last_leader_state = leader_state
+
+        # Set geo-fence on first position
+        if (self._failsafe and self._failsafe.geo_fence_center is None):
+            self._failsafe.set_geo_fence(leader_pos, self._config.geo_fence_radius)
+
+        # 5. Compute follower targets (only for non-leader aircraft)
+        follower_ids = self._leader_election.get_follower_ids()
+        targets = self._calculator.compute_targets(leader_state, follower_ids)
+        self._stats.last_targets = targets
+
+        # 6. Broadcast formation data to followers
+        if self._lora and self._lora.connected:
+            success = self._lora.broadcast_formation(leader_state, targets)
+            if success:
+                self._stats.lora_tx_count += 1
+            else:
+                self._stats.lora_tx_errors += 1
+
+        # 7. Periodic heartbeat
+        now = time.time()
+        if now - self._last_heartbeat_time > self._config.heartbeat_interval:
+            if self._lora and self._lora.connected:
+                self._lora.broadcast_heartbeat()
+            self._last_heartbeat_time = now
+
+        # 8. Update statistics
+        self._stats.uptime = now - self._start_time
+        self._stats.last_update_time = now
+
+        # 9. Notify external listeners
+        if self._on_update:
+            try:
+                self._on_update(leader_state, targets)
+            except Exception as e:
+                logger.warning(f"Update callback error: {e}")
+
+    def _on_leader_change(self, old_id: int, new_id: int, reason: str):
+        """Callback when leader changes (from LeaderElectionManager)."""
+        logger.warning(f"LEADER CHANGE: Aircraft {old_id} -> {new_id} ({reason})")
+
+        # Broadcast LEADER_ANNOUNCE via Lora
+        if self._lora and self._lora.connected:
+            reason_code = LeaderAnnounceReason.AUTO_FAILOVER
+            if "manual" in reason:
+                reason_code = LeaderAnnounceReason.MANUAL
+            elif "timeout" in reason:
+                reason_code = LeaderAnnounceReason.LEADER_TIMEOUT
+
+            self._lora.broadcast_leader_announce(
+                new_leader_id=new_id,
+                old_leader_id=old_id,
+                reason=reason_code
+            )
+            logger.info(f"LEADER_ANNOUNCE broadcast: {old_id} -> {new_id}")
+
+        # Update engine state
+        self._stats.failsafe_events += 1
+
+    def select_leader(self, aircraft_id: int) -> bool:
+        """
+        Manually select a new leader aircraft.
+
+        Can be called from the dashboard or API.
+        """
+        if self._leader_election:
+            return self._leader_election.select_leader(aircraft_id)
+        return False
 
     def _handle_failsafe_action(self, action: FailsafeAction):
         """Handle a triggered failsafe action."""
