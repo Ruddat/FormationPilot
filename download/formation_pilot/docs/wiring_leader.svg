@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 700" width="920" height="700">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap');
+      text { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Consolas', monospace; }
+      .board { rx: 8; ry: 8; }
+      .pin-label { font-size: 11px; fill: #8892a0; }
+      .pin-name { font-size: 12px; font-weight: 600; }
+      .wire { stroke-width: 2.5; fill: none; stroke-linecap: round; }
+      .wire-dash { stroke-dasharray: 6 3; }
+      .title { font-size: 22px; font-weight: 700; fill: #e0e0e0; }
+      .subtitle { font-size: 13px; fill: #8892a0; }
+      .conn-label { font-size: 10px; font-weight: 600; }
+      .note { font-size: 11px; fill: #ff9900; font-style: italic; }
+    </style>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrowR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#0099ff"/>
+    </marker>
+    <marker id="arrowT" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e94560"/>
+    </marker>
+  </defs>
+  <rect width="920" height="700" fill="#1a1a2e"/>
+  <text x="460" y="38" text-anchor="middle" class="title">Leader Wiring Diagram</text>
+  <text x="460" y="58" text-anchor="middle" class="subtitle">Raspberry Pi + Flight Controller + Lora Module</text>
+  <rect class="board" x="60" y="120" width="240" height="280"
+        fill="#16213e" stroke="#00cc66" stroke-width="2.5"/>
+  <rect x="60" y="120" width="240" height="36" rx="8" ry="8"
+        fill="#00cc66" opacity="0.15"/>
+  <text x="180" y="144" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#00cc66">Raspberry Pi</text>
+  <text x="180" y="172" text-anchor="middle" class="subtitle">Zero 2W / 4B</text>
+  <circle cx="300" cy="200" r="3.5" fill="#e94560"/>
+  <text x="308" y="204" class="mono pin-name" fill="#e94560" font-size="12">GPIO 14 (TXD)</text>
+  <circle cx="300" cy="222" r="3.5" fill="#0099ff"/>
+  <text x="308" y="226" class="mono pin-name" fill="#0099ff" font-size="12">GPIO 15 (RXD)</text>
+  <circle cx="300" cy="260" r="3.5" fill="#e94560"/>
+  <text x="308" y="264" class="mono pin-name" fill="#e94560" font-size="12">GPIO 4 (TXD1)</text>
+  <circle cx="300" cy="282" r="3.5" fill="#0099ff"/>
+  <text x="308" y="286" class="mono pin-name" fill="#0099ff" font-size="12">GPIO 5 (RXD1)</text>
+  <circle cx="300" cy="320" r="3.5" fill="#ffcc00"/>
+  <text x="308" y="324" class="mono pin-name" fill="#ffcc00" font-size="12">3.3V</text>
+  <circle cx="300" cy="342" r="3.5" fill="#ffcc00"/>
+  <text x="308" y="346" class="mono pin-name" fill="#ffcc00" font-size="12">5V</text>
+  <circle cx="300" cy="364" r="3.5" fill="#888888"/>
+  <text x="308" y="368" class="mono pin-name" fill="#888888" font-size="12">GND</text>
+  <text x="180" y="420" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">/dev/serial0 → FC</text>
+  <text x="180" y="438" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">/dev/serial1 → Lora</text>
+  <text x="180" y="456" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">WiFi → Web Dashboard</text>
+  <rect class="board" x="580" y="100" width="260" height="200"
+        fill="#16213e" stroke="#0099ff" stroke-width="2.5"/>
+  <rect x="580" y="100" width="260" height="36" rx="8" ry="8"
+        fill="#0099ff" opacity="0.15"/>
+  <text x="710" y="124" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#0099ff">Flight Controller</text>
+  <text x="710" y="152" text-anchor="middle" class="subtitle">INAV oder ArduPilot</text>
+  <circle cx="580" cy="180" r="3.5" fill="#0099ff"/>
+  <text x="572" y="184" text-anchor="end" class="mono pin-name" fill="#0099ff" font-size="12">RX (MAVLink)</text>
+  <circle cx="580" cy="202" r="3.5" fill="#e94560"/>
+  <text x="572" y="206" text-anchor="end" class="mono pin-name" fill="#e94560" font-size="12">TX (MAVLink)</text>
+  <circle cx="580" cy="240" r="3.5" fill="#ffcc00"/>
+  <text x="572" y="244" text-anchor="end" class="mono pin-name" fill="#ffcc00" font-size="12">5V IN</text>
+  <circle cx="580" cy="262" r="3.5" fill="#888888"/>
+  <text x="572" y="266" text-anchor="end" class="mono pin-name" fill="#888888" font-size="12">GND</text>
+  <text x="710" y="280" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">57600 baud (MAVLink)</text>
+  <rect class="board" x="580" y="380" width="260" height="200"
+        fill="#16213e" stroke="#ff9900" stroke-width="2.5"/>
+  <rect x="580" y="380" width="260" height="36" rx="8" ry="8"
+        fill="#ff9900" opacity="0.15"/>
+  <text x="710" y="404" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#ff9900">Lora Module</text>
+  <text x="710" y="432" text-anchor="middle" class="subtitle">SX1278 / RFM95W / E22-433T30D</text>
+  <circle cx="580" cy="460" r="3.5" fill="#0099ff"/>
+  <text x="572" y="464" text-anchor="end" class="mono pin-name" fill="#0099ff" font-size="12">RX (UART)</text>
+  <circle cx="580" cy="482" r="3.5" fill="#e94560"/>
+  <text x="572" y="486" text-anchor="end" class="mono pin-name" fill="#e94560" font-size="12">TX (UART)</text>
+  <circle cx="580" cy="520" r="3.5" fill="#ffcc00"/>
+  <text x="572" y="524" text-anchor="end" class="mono pin-name" fill="#ffcc00" font-size="12">3.3V</text>
+  <circle cx="580" cy="542" r="3.5" fill="#888888"/>
+  <text x="572" y="546" text-anchor="end" class="mono pin-name" fill="#888888" font-size="12">GND</text>
+  <text x="710" y="560" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">9600 baud (transparent)</text>
+  <text x="710" y="576" text-anchor="middle" class="mono" fill="#8892a0" font-size="11">433.125 MHz / SF7 / 20dBm</text>
+  <text x="800" y="455" text-anchor="middle" style="font-size:28px">📡</text>
+  <text x="800" y="475" text-anchor="middle" class="mono" fill="#8892a0" font-size="9">433MHz</text>
+  <path class="wire wire-dash" stroke="#e94560" d="M430,200 H505 V180 H580"/>
+  <text x="505" y="182" text-anchor="middle" class="conn-label" fill="#e94560">TX → FC RX</text>
+  <path class="wire wire-dash" stroke="#0099ff" d="M430,222 H505 V202 H580"/>
+  <text x="505" y="204" text-anchor="middle" class="conn-label" fill="#0099ff">RX ← FC TX</text>
+  <path class="wire wire-dash" stroke="#e94560" d="M430,260 H505 V460 H580"/>
+  <text x="505" y="352" text-anchor="middle" class="conn-label" fill="#e94560">TX → Lora RX</text>
+  <path class="wire wire-dash" stroke="#0099ff" d="M430,282 H505 V482 H580"/>
+  <text x="505" y="374" text-anchor="middle" class="conn-label" fill="#0099ff">RX ← Lora TX</text>
+  <line x1="300" y1="320" x2="572" y2="240"
+        stroke="#ffcc00" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="440" y="272" text-anchor="middle"
+        class="conn-label" fill="#ffcc00">5V</text>
+  <line x1="300" y1="342" x2="572" y2="520"
+        stroke="#ffcc00" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="420" y="423" text-anchor="middle"
+        class="conn-label" fill="#ffcc00">3.3V</text>
+  <line x1="300" y1="364" x2="572" y2="262"
+        stroke="#888888" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="300" y1="364" x2="572" y2="542"
+        stroke="#888888" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="40" y="620" width="840" height="55" rx="6" fill="#16213e" stroke="#0f3460" stroke-width="1"/>
+  <text x="60" y="640" class="mono" fill="#e94560" font-size="12">━━ TX (Daten senden)</text>
+  <text x="260" y="640" class="mono" fill="#0099ff" font-size="12">━━ RX (Daten empfangen)</text>
+  <text x="480" y="640" class="mono" fill="#ffcc00" font-size="12">╌╌ Stromversorgung</text>
+  <text x="660" y="640" class="mono" fill="#888888" font-size="12">╌╌ GND</text>
+  <text x="60" y="662" class="note">⚠️ Pi und FC auf gemeinsame GND verbinden! FC-Versorgung unabhängig vom Pi!</text>
+</svg>

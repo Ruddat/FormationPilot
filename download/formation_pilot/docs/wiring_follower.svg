@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 780" width="920" height="780">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap');
+      text { font-family: 'Inter', 'Segoe UI', Arial, sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Consolas', monospace; }
+      .board { rx: 8; ry: 8; }
+      .pin-label { font-size: 11px; fill: #8892a0; }
+      .pin-name { font-size: 12px; font-weight: 600; }
+      .wire { stroke-width: 2.5; fill: none; stroke-linecap: round; }
+      .wire-dash { stroke-dasharray: 6 3; }
+      .title { font-size: 22px; font-weight: 700; fill: #e0e0e0; }
+      .subtitle { font-size: 13px; fill: #8892a0; }
+      .conn-label { font-size: 10px; font-weight: 600; }
+      .note { font-size: 11px; fill: #ff9900; font-style: italic; }
+    </style>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <marker id="arrowR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#0099ff"/>
+    </marker>
+    <marker id="arrowT" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#e94560"/>
+    </marker>
+  </defs>
+  <rect width="920" height="780" fill="#1a1a2e"/>
+  <text x="460" y="38" text-anchor="middle" class="title">Follower Wiring Diagram</text>
+  <text x="460" y="58" text-anchor="middle" class="subtitle">ESP32 + Flight Controller + Lora Module + Status LEDs</text>
+  <rect class="board" x="60" y="100" width="260" height="420"
+        fill="#16213e" stroke="#00cc66" stroke-width="2.5"/>
+  <rect x="60" y="100" width="260" height="36" rx="8" ry="8"
+        fill="#00cc66" opacity="0.15"/>
+  <text x="190" y="124" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#00cc66">ESP32-WROOM-32</text>
+  <text x="190" y="152" text-anchor="middle" class="subtitle">DevKit / TTGO Lora32</text>
+  <circle cx="320" cy="180" r="3.5" fill="#e94560"/>
+  <text x="328" y="184" class="mono pin-name" fill="#e94560" font-size="11.5">GPIO 17 (TX1)</text>
+  <circle cx="320" cy="202" r="3.5" fill="#0099ff"/>
+  <text x="328" y="206" class="mono pin-name" fill="#0099ff" font-size="11.5">GPIO 16 (RX1)</text>
+  <circle cx="320" cy="234" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="238" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 18 (SCK)</text>
+  <circle cx="320" cy="256" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="260" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 19 (MISO)</text>
+  <circle cx="320" cy="278" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="282" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 23 (MOSI)</text>
+  <circle cx="320" cy="300" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="304" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 5  (NSS)</text>
+  <circle cx="320" cy="322" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="326" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 14 (RST)</text>
+  <circle cx="320" cy="344" r="3.5" fill="#ff9900"/>
+  <text x="328" y="348" class="mono pin-name" fill="#ff9900" font-size="11.5">GPIO 2  (DIO0)</text>
+  <circle cx="320" cy="376" r="3.5" fill="#00cc66"/>
+  <text x="328" y="380" class="mono pin-name" fill="#00cc66" font-size="11.5">GPIO 25 (LINK)</text>
+  <circle cx="320" cy="398" r="3.5" fill="#0099ff"/>
+  <text x="328" y="402" class="mono pin-name" fill="#0099ff" font-size="11.5">GPIO 26 (FC)</text>
+  <circle cx="320" cy="420" r="3.5" fill="#cc66ff"/>
+  <text x="328" y="424" class="mono pin-name" fill="#cc66ff" font-size="11.5">GPIO 27 (GPS)</text>
+  <circle cx="320" cy="442" r="3.5" fill="#e94560"/>
+  <text x="328" y="446" class="mono pin-name" fill="#e94560" font-size="11.5">GPIO 32 (ERR)</text>
+  <circle cx="320" cy="474" r="3.5" fill="#ff9900"/>
+  <text x="328" y="478" class="mono pin-name" fill="#ff9900" font-size="11.5">GPIO 33 (BTN)</text>
+  <circle cx="320" cy="506" r="3.5" fill="#ffcc00"/>
+  <text x="328" y="510" class="mono pin-name" fill="#ffcc00" font-size="11.5">3.3V</text>
+  <text x="190" y="540" text-anchor="middle" class="mono" fill="#8892a0" font-size="10">Serial0: USB Debug (115200)</text>
+  <text x="190" y="555" text-anchor="middle" class="mono" fill="#8892a0" font-size="10">Serial1: FC (57600/115200)</text>
+  <rect class="board" x="580" y="80" width="260" height="180"
+        fill="#16213e" stroke="#0099ff" stroke-width="2.5"/>
+  <rect x="580" y="80" width="260" height="36" rx="8" ry="8"
+        fill="#0099ff" opacity="0.15"/>
+  <text x="710" y="104" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#0099ff">Flight Controller</text>
+  <text x="710" y="132" text-anchor="middle" class="subtitle">INAV oder ArduPilot</text>
+  <circle cx="580" cy="160" r="3.5" fill="#0099ff"/>
+  <text x="572" y="164" text-anchor="end" class="mono pin-name" fill="#0099ff" font-size="12">RX</text>
+  <circle cx="580" cy="182" r="3.5" fill="#e94560"/>
+  <text x="572" y="186" text-anchor="end" class="mono pin-name" fill="#e94560" font-size="12">TX</text>
+  <circle cx="580" cy="216" r="3.5" fill="#ffcc00"/>
+  <text x="572" y="220" text-anchor="end" class="mono pin-name" fill="#ffcc00" font-size="12">5V IN</text>
+  <circle cx="580" cy="238" r="3.5" fill="#888888"/>
+  <text x="572" y="242" text-anchor="end" class="mono pin-name" fill="#888888" font-size="12">GND</text>
+  <rect class="board" x="580" y="320" width="260" height="200"
+        fill="#16213e" stroke="#ff9900" stroke-width="2.5"/>
+  <rect x="580" y="320" width="260" height="36" rx="8" ry="8"
+        fill="#ff9900" opacity="0.15"/>
+  <text x="710" y="344" text-anchor="middle"
+        style="font-size:15px;font-weight:700;fill:#ff9900">Lora Module</text>
+  <text x="710" y="372" text-anchor="middle" class="subtitle">SX1278 / RFM95W (SPI)</text>
+  <circle cx="580" cy="400" r="3.5" fill="#cc66ff"/>
+  <text x="572" y="404" text-anchor="end" class="mono pin-name" fill="#cc66ff" font-size="12">SCK</text>
+  <circle cx="580" cy="422" r="3.5" fill="#cc66ff"/>
+  <text x="572" y="426" text-anchor="end" class="mono pin-name" fill="#cc66ff" font-size="12">MISO</text>
+  <circle cx="580" cy="444" r="3.5" fill="#cc66ff"/>
+  <text x="572" y="448" text-anchor="end" class="mono pin-name" fill="#cc66ff" font-size="12">MOSI</text>
+  <circle cx="580" cy="466" r="3.5" fill="#cc66ff"/>
+  <text x="572" y="470" text-anchor="end" class="mono pin-name" fill="#cc66ff" font-size="12">NSS (CS)</text>
+  <circle cx="580" cy="488" r="3.5" fill="#cc66ff"/>
+  <text x="572" y="492" text-anchor="end" class="mono pin-name" fill="#cc66ff" font-size="12">RST</text>
+  <text x="800" y="395" text-anchor="middle" style="font-size:28px">📡</text>
+  <text x="800" y="415" text-anchor="middle" class="mono" fill="#8892a0" font-size="9">433MHz</text>
+  <rect x="580" y="570" width="260" height="110" rx="6" fill="#16213e" stroke="#cc66ff" stroke-width="1.5"/>
+  <text x="710" y="590" text-anchor="middle" style="font-size:13px;font-weight:600;fill:#cc66ff">Status LEDs</text>
+  <text x="592" y="614" class="mono" fill="#00cc66" font-size="11">🟢 LINK (GPIO 25)</text>
+  <text x="592" y="632" class="mono" fill="#0099ff" font-size="11">🔵 FC (GPIO 26)</text>
+  <text x="592" y="650" class="mono" fill="#cc66ff" font-size="11">⚪ GPS (GPIO 27)</text>
+  <text x="592" y="668" class="mono" fill="#e94560" font-size="11">🔴 ERR (GPIO 32)</text>
+  <text x="710" y="678" text-anchor="middle" class="note" font-size="10">je 220 Ohm Vorwiderstand!</text>
+  <rect x="580" y="700" width="260" height="40" rx="6" fill="#16213e" stroke="#ff9900" stroke-width="1.5"/>
+  <text x="710" y="725" text-anchor="middle" class="mono" fill="#ff9900" font-size="12">⏺ Config Button (GPIO 33 → GND)</text>
+  <path class="wire wire-dash" stroke="#e94560" d="M450,180 H515 V160 H580"/>
+  <text x="515" y="162" text-anchor="middle" class="conn-label" fill="#e94560">TX1 → FC RX</text>
+  <path class="wire wire-dash" stroke="#0099ff" d="M450,202 H515 V182 H580"/>
+  <text x="515" y="184" text-anchor="middle" class="conn-label" fill="#0099ff">RX1 ← FC TX</text>
+  <path class="wire wire-dash" stroke="#cc66ff" d="M450,234 H515 V400 H580"/>
+  <text x="515" y="309" text-anchor="middle" class="conn-label" fill="#cc66ff">SCK</text>
+  <path class="wire wire-dash" stroke="#cc66ff" d="M450,256 H515 V422 H580"/>
+  <text x="515" y="331" text-anchor="middle" class="conn-label" fill="#cc66ff">MISO</text>
+  <path class="wire wire-dash" stroke="#cc66ff" d="M450,278 H515 V444 H580"/>
+  <text x="515" y="353" text-anchor="middle" class="conn-label" fill="#cc66ff">MOSI</text>
+  <path class="wire wire-dash" stroke="#cc66ff" d="M450,300 H515 V466 H580"/>
+  <text x="515" y="375" text-anchor="middle" class="conn-label" fill="#cc66ff">NSS</text>
+  <path class="wire wire-dash" stroke="#cc66ff" d="M450,322 H515 V488 H580"/>
+  <text x="515" y="397" text-anchor="middle" class="conn-label" fill="#cc66ff">RST</text>
+  <line x1="450" y1="344" x2="580" y2="510"
+        stroke="#ff9900" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <text x="515" y="419" text-anchor="middle"
+        class="conn-label" fill="#ff9900">DIO0 (IRQ)</text>
+  <line x1="450" y1="376" x2="580" y2="614"
+        stroke="#00cc66" stroke-width="2" stroke-dasharray="6 3"/>
+  <line x1="450" y1="398" x2="580" y2="632"
+        stroke="#0099ff" stroke-width="2" stroke-dasharray="6 3"/>
+  <line x1="450" y1="420" x2="580" y2="650"
+        stroke="#cc66ff" stroke-width="2" stroke-dasharray="6 3"/>
+  <line x1="450" y1="442" x2="580" y2="668"
+        stroke="#e94560" stroke-width="2" stroke-dasharray="6 3"/>
+  <line x1="450" y1="474" x2="580" y2="720"
+        stroke="#ff9900" stroke-width="2" stroke-dasharray="6 3"/>
+  <line x1="450" y1="506" x2="572" y2="216"
+        stroke="#ffcc00" stroke-width="2" stroke-dasharray="6 3"/>
+  <text x="515" y="353" text-anchor="middle"
+        class="conn-label" fill="#ffcc00">5V (USB)</text>
+  <line x1="450" y1="510" x2="572" y2="238"
+        stroke="#888888" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="40" y="720" width="840" height="45" rx="6" fill="#16213e" stroke="#0f3460" stroke-width="1"/>
+  <text x="60" y="738" class="mono" fill="#e94560" font-size="11">━━ TX</text>
+  <text x="140" y="738" class="mono" fill="#0099ff" font-size="11">━━ RX</text>
+  <text x="220" y="738" class="mono" fill="#cc66ff" font-size="11">━━ SPI</text>
+  <text x="300" y="738" class="mono" fill="#ff9900" font-size="11">━━ GPIO</text>
+  <text x="400" y="738" class="mono" fill="#ffcc00" font-size="11">╌╌ Power</text>
+  <text x="500" y="738" class="mono" fill="#888888" font-size="11">╌╌ GND</text>
+  <text x="60" y="758" class="note">⚠️ LEDs mit 220 Ohm Vorwiderstand! Button mit internem Pullup. Alle GND verbinden!</text>
+</svg>

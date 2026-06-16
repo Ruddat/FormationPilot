@@ -297,16 +297,38 @@ Die FC-eigenen Failsafes (RTH, GPS-Failsafe) greifen IMMER zusätzlich und haben
 | MCU | ESP32 + Lora (TTGO Lora32) | ~8€ |
 | Alternativ | ESP32 + separates Lora-Modul | ~10€ |
 
-### Wiring (Raspberry Pi)
-```
-Pi GPIO 14 (TXD) ──────── FC RX (MAVLink)
-Pi GPIO 15 (RXD) ──────── FC TX (MAVLink)
+### Wiring Diagrams
 
-Pi /dev/serial1 TX ────── Lora RX
-Pi /dev/serial1 RX ────── Lora TX
-Pi 3.3V ───────────────── Lora VCC
-Pi GND ────────────────── Lora GND
-```
+#### Leader (Raspberry Pi)
+![Leader Wiring Diagram](docs/wiring_leader.svg)
+
+| Verbindung | Pi Pin | FC / Lora Pin | Kabel |
+|-----------|--------|---------------|-------|
+| MAVLink TX | GPIO 14 (TXD) | FC RX | Rot |
+| MAVLink RX | GPIO 15 (RXD) | FC TX | Blau |
+| Lora TX | GPIO 4 (TXD1) | Lora RX | Rot |
+| Lora RX | GPIO 5 (RXD1) | Lora TX | Blau |
+| Lora Power | 3.3V | Lora VCC | Gelb |
+| Lora GND | GND | Lora GND | Grau |
+
+#### Follower (ESP32)
+![Follower Wiring Diagram](docs/wiring_follower.svg)
+
+| Verbindung | ESP32 Pin | Ziel Pin | Kabel |
+|-----------|-----------|----------|-------|
+| FC TX | GPIO 17 (TX1) | FC RX | Rot |
+| FC RX | GPIO 16 (RX1) | FC TX | Blau |
+| Lora SCK | GPIO 18 | Lora SCK | Lila |
+| Lora MISO | GPIO 19 | Lora MISO | Lila |
+| Lora MOSI | GPIO 23 | Lora MOSI | Lila |
+| Lora NSS | GPIO 5 | Lora CS | Lila |
+| Lora RST | GPIO 14 | Lora RST | Lila |
+| Lora IRQ | GPIO 2 | Lora DIO0 | Orange |
+| LED LINK | GPIO 25 | LED Grün (220Ω) | Grün |
+| LED FC | GPIO 26 | LED Blau (220Ω) | Blau |
+| LED GPS | GPIO 27 | LED Weiß (220Ω) | Weiß |
+| LED ERR | GPIO 32 | LED Rot (220Ω) | Rot |
+| Config Button | GPIO 33 | Taste → GND | Orange |
 
 ## API Endpunkte
 
