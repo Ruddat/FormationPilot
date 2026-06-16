@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FormationPilot - Wiring Diagrams</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --bg2: #111827;
+            --card: #1a2332;
+            --border: #2a3a4e;
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --accent: #3b82f6;
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --orange: #f97316;
+            --purple: #a855f7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+        .header h1 span { color: var(--accent); }
+        .header p {
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            background: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { border-color: var(--accent); }
+        .tab-btn.active {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.15);
+            box-shadow: 0 0 12px rgba(59,130,246,0.2);
+        }
+        .diagram-container {
+            display: none;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .diagram-container.active { display: block; }
+        .diagram-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .diagram-card .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .diagram-card .card-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .diagram-card .card-header .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-leader { background: rgba(59,130,246,0.15); color: var(--accent); }
+        .badge-follower { background: rgba(16,185,129,0.15); color: var(--green); }
+        .badge-ttgo { background: rgba(168,85,247,0.15); color: var(--purple); }
+        .diagram-svg {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            background: #0d1117;
+        }
+        .diagram-svg svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .pin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .pin-table th {
+            text-align: left;
+            padding: 10px 16px;
+            background: var(--bg2);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+        }
+        .pin-table td {
+            padding: 8px 16px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42,58,78,0.5);
+        }
+        .pin-table tr:hover td { background: rgba(59,130,246,0.05); }
+        .color-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .info-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .info-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .info-card li {
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42,58,78,0.3);
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-card li:last-child { border-bottom: none; }
+        .info-card .label { color: var(--text-dim); }
+        .info-card .value { font-weight: 600; }
+        .warning-box {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 13px;
+            color: var(--yellow);
+        }
+        .warning-box strong { color: #fbbf24; }
+        .bom-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        .bom-table th {
+            text-align: left;
+            padding: 8px 12px;
+            background: var(--bg2);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .bom-table td {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(42,58,78,0.5);
+        }
+        @media print {
+            body { background: white; color: black; }
+            .tab-btn { display: none; }
+            .diagram-container { display: block !important; page-break-after: always; }
+            .diagram-card { border: 1px solid #ccc; }
+            .diagram-svg { background: white; }
+        }
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .info-grid { grid-template-columns: 1fr; }
+            .tabs { gap: 4px; }
+            .tab-btn { padding: 8px 12px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>✈️ Formation<span>Pilot</span> Wiring</h1>
+    <p>by aeroFun Fpv Ingo Ruddat &mdash; Pin-Belegung und Verkabelung</p>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('leader')">🏆 Leader (Pi)</button>
+    <button class="tab-btn" onclick="showTab('follower')">🛩️ Follower (ESP32)</button>
+    <button class="tab-btn" onclick="showTab('ttgo')">📦 TTGO Lora32</button>
+    <button class="tab-btn" onclick="showTab('bom')">📋 BOM</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- LEADER DIAGRAM (Raspberry Pi)                                 -->
+<!-- ============================================================ -->
+<div id="tab-leader" class="diagram-container active">
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>🏆 Leader &ndash; Raspberry Pi</h2>
+            <span class="badge badge-leader">LEADER</span>
+        </div>
+        <div class="diagram-svg">
+            <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+                <!-- Background grid -->
+                <defs>
+                    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a2332" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="900" height="520" fill="#0d1117"/>
+                <rect width="900" height="520" fill="url(#grid)"/>
+
+                <!-- RASPBERRY PI -->
+                <rect x="320" y="60" width="200" height="400" rx="12" fill="#1a2332" stroke="#2a3a4e" stroke-width="2"/>
+                <rect x="340" y="80" width="160" height="30" rx="4" fill="#2a3a4e"/>
+                <text x="420" y="100" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="700">Raspberry Pi</text>
+                <text x="420" y="120" text-anchor="middle" fill="#8892a4" font-size="10">Zero 2W / 4B</text>
+
+                <!-- Pi Pin rows -->
+                <rect x="330" y="140" width="180" height="24" rx="3" fill="#111827"/>
+                <text x="420" y="156" text-anchor="middle" fill="#8892a4" font-size="9">GPIO Header</text>
+
+                <!-- Pin labels on Pi -->
+                <!-- Right side: GPIO 14, 15, 4, 5, 3.3V, GND -->
+                <rect x="505" y="175" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="522" y="184" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 14 (TXD)</text>
+                <rect x="505" y="195" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="522" y="204" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 15 (RXD)</text>
+                <rect x="505" y="215" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="522" y="224" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 4 (TXD1)</text>
+                <rect x="505" y="235" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="522" y="244" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 5 (RXD1)</text>
+                <rect x="505" y="260" width="10" height="10" rx="2" fill="#f59e0b"/>
+                <text x="522" y="269" fill="#e2e8f0" font-size="10" font-family="monospace">3.3V</text>
+                <rect x="505" y="280" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="522" y="289" fill="#e2e8f0" font-size="10" font-family="monospace">GND</text>
+
+                <!-- FLIGHT CONTROLLER (left side) -->
+                <rect x="40" y="140" width="160" height="160" rx="12" fill="#1a2332" stroke="#10b981" stroke-width="2"/>
+                <text x="120" y="170" text-anchor="middle" fill="#10b981" font-size="14" font-weight="700">Flight Controller</text>
+                <text x="120" y="188" text-anchor="middle" fill="#8892a4" font-size="10">INAV / ArduPilot</text>
+                <rect x="40" y="200" width="160" height="20" rx="3" fill="#111827"/>
+                <text x="120" y="214" text-anchor="middle" fill="#8892a4" font-size="9">UART Port</text>
+
+                <!-- FC Pins -->
+                <rect x="35" y="230" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="15" y="239" fill="#e2e8f0" font-size="10" font-family="monospace" text-anchor="end">RX</text>
+                <rect x="35" y="250" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="15" y="259" fill="#e2e8f0" font-size="10" font-family="monospace" text-anchor="end">TX</text>
+                <rect x="35" y="270" width="10" height="10" rx="2" fill="#ef4444"/>
+                <text x="15" y="279" fill="#e2e8f0" font-size="10" font-family="monospace" text-anchor="end">5V</text>
+                <rect x="35" y="290" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="15" y="299" fill="#e2e8f0" font-size="10" font-family="monospace" text-anchor="end">GND</text>
+
+                <!-- LORA MODULE (right side) -->
+                <rect x="700" y="140" width="160" height="200" rx="12" fill="#1a2332" stroke="#a855f7" stroke-width="2"/>
+                <text x="780" y="170" text-anchor="middle" fill="#a855f7" font-size="14" font-weight="700">Lora Modul</text>
+                <text x="780" y="188" text-anchor="middle" fill="#8892a4" font-size="10">SX1278 433MHz</text>
+                <rect x="700" y="200" width="160" height="20" rx="3" fill="#111827"/>
+                <text x="780" y="214" text-anchor="middle" fill="#8892a4" font-size="9">UART / AT-Mode</text>
+
+                <!-- Lora Pins -->
+                <rect x="695" y="230" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="870" y="239" fill="#e2e8f0" font-size="10" font-family="monospace">RX</text>
+                <rect x="695" y="250" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="870" y="259" fill="#e2e8f0" font-size="10" font-family="monospace">TX</text>
+                <rect x="695" y="270" width="10" height="10" rx="2" fill="#f59e0b"/>
+                <text x="870" y="279" fill="#e2e8f0" font-size="10" font-family="monospace">VCC (3.3V)</text>
+                <rect x="695" y="290" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="870" y="299" fill="#e2e8f0" font-size="10" font-family="monospace">GND</text>
+
+                <!-- Antenna symbol -->
+                <line x1="780" y1="140" x2="780" y2="105" stroke="#a855f7" stroke-width="2"/>
+                <line x1="770" y1="115" x2="780" y2="95" stroke="#a855f7" stroke-width="2"/>
+                <line x1="790" y1="115" x2="780" y2="95" stroke="#a855f7" stroke-width="2"/>
+                <text x="780" y="90" text-anchor="middle" fill="#8892a4" font-size="9">433MHz</text>
+
+                <!-- ===== WIRES ===== -->
+                <!-- Pi GPIO 14 (TX) -> FC RX (MAVLink TX) -->
+                <path d="M 515 180 L 555 180 L 555 310 L 230 310 L 230 235 L 45 235" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                <text x="390" y="305" fill="#3b82f6" font-size="9" font-weight="600">MAVLink TX (57600 baud)</text>
+
+                <!-- Pi GPIO 15 (RX) -> FC TX (MAVLink RX) -->
+                <path d="M 515 200 L 545 200 L 545 325 L 215 325 L 215 255 L 45 255" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+                <text x="390" y="320" fill="#60a5fa" font-size="9" font-weight="600">MAVLink RX (57600 baud)</text>
+
+                <!-- Pi GPIO 4 (TXD1) -> Lora RX -->
+                <path d="M 515 220 L 565 220 L 565 165 L 660 165 L 660 235 L 695 235" fill="none" stroke="#a855f7" stroke-width="3" stroke-linecap="round"/>
+                <text x="600" y="160" fill="#a855f7" font-size="9" font-weight="600">Lora TX (9600 baud)</text>
+
+                <!-- Pi GPIO 5 (RXD1) -> Lora TX -->
+                <path d="M 515 240 L 575 240 L 575 180 L 670 180 L 670 255 L 695 255" fill="none" stroke="#c084fc" stroke-width="3" stroke-linecap="round"/>
+                <text x="600" y="195" fill="#c084fc" font-size="9" font-weight="600">Lora RX (9600 baud)</text>
+
+                <!-- 3.3V -> Lora VCC -->
+                <path d="M 515 265 L 590 265 L 590 275 L 695 275" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <text x="620" y="262" fill="#f59e0b" font-size="9" font-weight="600">3.3V</text>
+
+                <!-- GND -> Lora GND + FC GND -->
+                <path d="M 515 285 L 590 285 L 590 295 L 695 295" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>
+                <path d="M 590 285 L 590 390 L 230 390 L 230 295 L 45 295" fill="none" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>
+                <text x="400" y="385" fill="#6b7280" font-size="9" font-weight="600">GND (gemeinsam)</text>
+
+                <!-- FC 5V -> Pi Power (via USB or GPIO) -->
+                <path d="M 45 275 L 25 275 L 25 430 L 420 430 L 420 460" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round" stroke-dasharray="8,4"/>
+                <text x="220" y="445" fill="#ef4444" font-size="9" font-weight="600">5V BEC / USB Power</text>
+
+                <!-- Power note -->
+                <rect x="340" y="450" width="160" height="50" rx="6" fill="rgba(245,158,11,0.1)" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+                <text x="420" y="470" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">⚡ Pi: 5V / 2A+ min!</text>
+                <text x="420" y="488" text-anchor="middle" fill="#8892a4" font-size="9">BEC oder USB-C</text>
+
+                <!-- Legend -->
+                <rect x="40" y="370" width="12" height="12" rx="2" fill="#3b82f6"/>
+                <text x="58" y="381" fill="#8892a4" font-size="9">MAVLink UART</text>
+                <rect x="40" y="388" width="12" height="12" rx="2" fill="#a855f7"/>
+                <text x="58" y="399" fill="#8892a4" font-size="9">Lora UART</text>
+                <rect x="40" y="406" width="12" height="12" rx="2" fill="#f59e0b"/>
+                <text x="58" y="417" fill="#8892a4" font-size="9">Power (3.3V)</text>
+                <rect x="40" y="424" width="12" height="12" rx="2" fill="#6b7280"/>
+                <text x="58" y="435" fill="#8892a4" font-size="9">GND</text>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Pin Table Leader -->
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>Pin-Belegung Leader</h2>
+            <span class="badge badge-leader">RASPBERRY PI</span>
+        </div>
+        <table class="pin-table">
+            <thead>
+                <tr>
+                    <th>Funktion</th>
+                    <th>Pi Pin</th>
+                    <th>Ziel</th>
+                    <th>Kabel</th>
+                    <th>Protokoll</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>MAVLink TX</td>
+                    <td><code>GPIO 14 (TXD)</code></td>
+                    <td>FC RX</td>
+                    <td><span class="color-dot" style="background:#3b82f6"></span>Blau</td>
+                    <td>UART 57600 baud</td>
+                </tr>
+                <tr>
+                    <td>MAVLink RX</td>
+                    <td><code>GPIO 15 (RXD)</code></td>
+                    <td>FC TX</td>
+                    <td><span class="color-dot" style="background:#60a5fa"></span>Hellblau</td>
+                    <td>UART 57600 baud</td>
+                </tr>
+                <tr>
+                    <td>Lora TX</td>
+                    <td><code>GPIO 4 (TXD1)</code></td>
+                    <td>Lora RX</td>
+                    <td><span class="color-dot" style="background:#a855f7"></span>Lila</td>
+                    <td>UART 9600 baud</td>
+                </tr>
+                <tr>
+                    <td>Lora RX</td>
+                    <td><code>GPIO 5 (RXD1)</code></td>
+                    <td>Lora TX</td>
+                    <td><span class="color-dot" style="background:#c084fc"></span>Helllila</td>
+                    <td>UART 9600 baud</td>
+                </tr>
+                <tr>
+                    <td>Lora VCC</td>
+                    <td><code>3.3V (Pin 1/17)</code></td>
+                    <td>Lora VCC</td>
+                    <td><span class="color-dot" style="background:#f59e0b"></span>Gelb</td>
+                    <td>3.3V Versorgung</td>
+                </tr>
+                <tr>
+                    <td>GND</td>
+                    <td><code>GND (Pin 6/9/14...)</code></td>
+                    <td>Lora + FC GND</td>
+                    <td><span class="color-dot" style="background:#6b7280"></span>Grau</td>
+                    <td>Gemeinsame Masse</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="warning-box">
+        <strong>⚠️ Wichtig:</strong> Den Pi NICHT vom FC 5V speisen! Der Pi Zero 2W braucht mindestens 2A.
+        Einen separaten 5V BEC verwenden. Die Lora-Module laufen an 3.3V &ndash; NIEMALS 5V an VCC!
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FOLLOWER DIAGRAM (ESP32 + SX1278)                             -->
+<!-- ============================================================ -->
+<div id="tab-follower" class="diagram-container">
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>🛩️ Follower &ndash; ESP32 + SX1278</h2>
+            <span class="badge badge-follower">FOLLOWER</span>
+        </div>
+        <div class="diagram-svg">
+            <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid2" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a2332" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="1000" height="620" fill="#0d1117"/>
+                <rect width="1000" height="620" fill="url(#grid2)"/>
+
+                <!-- ESP32 BOARD -->
+                <rect x="350" y="40" width="220" height="530" rx="12" fill="#1a2332" stroke="#2a3a4e" stroke-width="2"/>
+                <rect x="370" y="55" width="180" height="30" rx="4" fill="#2a3a4e"/>
+                <text x="460" y="75" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="700">ESP32-WROOM-32</text>
+                <text x="460" y="95" text-anchor="middle" fill="#8892a4" font-size="10">DevKit V4</text>
+
+                <!-- ESP32 USB connector -->
+                <rect x="430" y="40" width="60" height="15" rx="3" fill="#374151"/>
+                <text x="460" y="52" text-anchor="middle" fill="#8892a4" font-size="7">USB-C</text>
+
+                <!-- Left side pins (SPI to Lora) -->
+                <text x="360" y="130" fill="#a855f7" font-size="10" font-weight="600">SPI (Lora)</text>
+                <rect x="345" y="140" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="330" y="149" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 18 (SCK)</text>
+                <rect x="345" y="160" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="330" y="169" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 19 (MISO)</text>
+                <rect x="345" y="180" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="330" y="189" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 23 (MOSI)</text>
+                <rect x="345" y="200" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="330" y="209" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 5 (NSS)</text>
+                <rect x="345" y="220" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="330" y="229" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 14 (RST)</text>
+                <rect x="345" y="240" width="10" height="10" rx="2" fill="#f97316"/>
+                <text x="330" y="249" fill="#e2e8f0" font-size="9" font-family="monospace" text-anchor="end">GPIO 2 (DIO0/IRQ)</text>
+
+                <!-- Right side pins (UART to FC) -->
+                <text x="560" y="130" fill="#3b82f6" font-size="10" font-weight="600">UART1 (FC)</text>
+                <rect x="565" y="140" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="582" y="149" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 17 (TX1)</text>
+                <rect x="565" y="160" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="582" y="169" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 16 (RX1)</text>
+
+                <!-- Right side: LEDs -->
+                <text x="560" y="200" fill="#10b981" font-size="10" font-weight="600">Status LEDs</text>
+                <rect x="565" y="210" width="10" height="10" rx="2" fill="#10b981"/>
+                <text x="582" y="219" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 25 (LINK gruen)</text>
+                <rect x="565" y="230" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="582" y="239" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 26 (FC blau)</text>
+                <rect x="565" y="250" width="10" height="10" rx="2" fill="#e2e8f0"/>
+                <text x="582" y="259" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 27 (GPS weiss)</text>
+                <rect x="565" y="270" width="10" height="10" rx="2" fill="#ef4444"/>
+                <text x="582" y="279" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 32 (ERR rot)</text>
+
+                <!-- Config button -->
+                <rect x="565" y="300" width="10" height="10" rx="2" fill="#f97316"/>
+                <text x="582" y="309" fill="#e2e8f0" font-size="9" font-family="monospace">GPIO 33 (Config)</text>
+
+                <!-- LORA MODULE (left) -->
+                <rect x="40" y="120" width="180" height="200" rx="12" fill="#1a2332" stroke="#a855f7" stroke-width="2"/>
+                <text x="130" y="150" text-anchor="middle" fill="#a855f7" font-size="14" font-weight="700">SX1278</text>
+                <text x="130" y="168" text-anchor="middle" fill="#8892a4" font-size="10">433MHz Lora</text>
+
+                <!-- Lora pin labels -->
+                <rect x="225" y="175" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="240" y="184" fill="#8892a4" font-size="9">SCK</text>
+                <rect x="225" y="195" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="240" y="204" fill="#8892a4" font-size="9">MISO</text>
+                <rect x="225" y="215" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="240" y="224" fill="#8892a4" font-size="9">MOSI</text>
+                <rect x="225" y="235" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="240" y="244" fill="#8892a4" font-size="9">NSS (CS)</text>
+                <rect x="225" y="255" width="10" height="10" rx="2" fill="#a855f7"/>
+                <text x="240" y="264" fill="#8892a4" font-size="9">RST</text>
+                <rect x="225" y="275" width="10" height="10" rx="2" fill="#f97316"/>
+                <text x="240" y="284" fill="#8892a4" font-size="9">DIO0 (IRQ)</text>
+
+                <!-- Lora power -->
+                <rect x="55" y="175" width="10" height="10" rx="2" fill="#f59e0b"/>
+                <text x="48" y="184" fill="#8892a4" font-size="9" text-anchor="end">VCC 3.3V</text>
+                <rect x="55" y="195" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="48" y="204" fill="#8892a4" font-size="9" text-anchor="end">GND</text>
+
+                <!-- Antenna -->
+                <line x1="130" y1="120" x2="130" y2="85" stroke="#a855f7" stroke-width="2"/>
+                <line x1="120" y1="95" x2="130" y2="75" stroke="#a855f7" stroke-width="2"/>
+                <line x1="140" y1="95" x2="130" y2="75" stroke="#a855f7" stroke-width="2"/>
+                <text x="130" y="70" text-anchor="middle" fill="#8892a4" font-size="9">433MHz Antenne</text>
+
+                <!-- FLIGHT CONTROLLER (right) -->
+                <rect x="760" y="120" width="180" height="120" rx="12" fill="#1a2332" stroke="#10b981" stroke-width="2"/>
+                <text x="850" y="150" text-anchor="middle" fill="#10b981" font-size="14" font-weight="700">Flight Controller</text>
+                <text x="850" y="168" text-anchor="middle" fill="#8892a4" font-size="10">INAV / ArduPilot</text>
+
+                <!-- FC pin labels -->
+                <rect x="755" y="185" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="748" y="194" fill="#8892a4" font-size="9" text-anchor="end">RX</text>
+                <rect x="755" y="205" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="748" y="214" fill="#8892a4" font-size="9" text-anchor="end">TX</text>
+                <rect x="755" y="225" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="748" y="234" fill="#8892a4" font-size="9" text-anchor="end">GND</text>
+
+                <!-- ===== WIRES ===== -->
+
+                <!-- SPI Bus (ESP32 -> Lora) -->
+                <!-- SCK -->
+                <path d="M 345 145 L 280 145 L 280 180 L 235 180" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- MISO -->
+                <path d="M 345 165 L 290 165 L 290 200 L 235 200" fill="none" stroke="#c084fc" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- MOSI -->
+                <path d="M 345 185 L 300 185 L 300 220 L 235 220" fill="none" stroke="#d8b4fe" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- NSS -->
+                <path d="M 345 205 L 310 205 L 310 240 L 235 240" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6,3"/>
+                <!-- RST -->
+                <path d="M 345 225 L 320 225 L 320 260 L 235 260" fill="none" stroke="#a855f7" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6,3"/>
+                <!-- DIO0 -->
+                <path d="M 345 245 L 330 245 L 330 280 L 235 280" fill="none" stroke="#f97316" stroke-width="2.5" stroke-linecap="round"/>
+
+                <!-- UART (ESP32 -> FC) -->
+                <!-- TX -->
+                <path d="M 575 145 L 650 145 L 650 190 L 755 190" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                <!-- RX -->
+                <path d="M 575 165 L 660 165 L 660 210 L 755 210" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+                <!-- GND -->
+                <path d="M 575 475 L 700 475 L 700 230 L 755 230" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"/>
+
+                <!-- 3.3V -> Lora VCC -->
+                <path d="M 380 570 L 65 570 L 65 180 L 55 180" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- GND -> Lora GND -->
+                <path d="M 400 570 L 75 570 L 75 200 L 55 200" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"/>
+
+                <!-- LED Symbols -->
+                <g transform="translate(760, 290)">
+                    <rect x="0" y="0" width="180" height="130" rx="8" fill="#111827" stroke="#2a3a4e" stroke-width="1"/>
+                    <text x="90" y="18" text-anchor="middle" fill="#8892a4" font-size="9" font-weight="600">STATUS LEDs (220 Ohm)</text>
+                    <circle cx="25" cy="40" r="8" fill="none" stroke="#10b981" stroke-width="2"/>
+                    <text x="45" y="44" fill="#10b981" font-size="9">LINK (gruen)</text>
+                    <circle cx="25" cy="65" r="8" fill="none" stroke="#3b82f6" stroke-width="2"/>
+                    <text x="45" y="69" fill="#3b82f6" font-size="9">FC (blau)</text>
+                    <circle cx="25" cy="90" r="8" fill="none" stroke="#e2e8f0" stroke-width="2"/>
+                    <text x="45" y="94" fill="#e2e8f0" font-size="9">GPS (weiss)</text>
+                    <circle cx="25" cy="115" r="8" fill="none" stroke="#ef4444" stroke-width="2"/>
+                    <text x="45" y="119" fill="#ef4444" font-size="9">ERR (rot)</text>
+                    <!-- Resistor symbols -->
+                    <line x1="110" y1="40" x2="145" y2="40" stroke="#8892a4" stroke-width="1.5"/>
+                    <rect x="115" y="36" width="25" height="8" rx="2" fill="none" stroke="#8892a4" stroke-width="1.5"/>
+                    <text x="152" y="44" fill="#8892a4" font-size="8">220R</text>
+                    <line x1="110" y1="65" x2="145" y2="65" stroke="#8892a4" stroke-width="1.5"/>
+                    <rect x="115" y="61" width="25" height="8" rx="2" fill="none" stroke="#8892a4" stroke-width="1.5"/>
+                    <text x="152" y="69" fill="#8892a4" font-size="8">220R</text>
+                    <line x1="110" y1="90" x2="145" y2="90" stroke="#8892a4" stroke-width="1.5"/>
+                    <rect x="115" y="86" width="25" height="8" rx="2" fill="none" stroke="#8892a4" stroke-width="1.5"/>
+                    <text x="152" y="94" fill="#8892a4" font-size="8">220R</text>
+                    <line x1="110" y1="115" x2="145" y2="115" stroke="#8892a4" stroke-width="1.5"/>
+                    <rect x="115" y="111" width="25" height="8" rx="2" fill="none" stroke="#8892a4" stroke-width="1.5"/>
+                    <text x="152" y="119" fill="#8892a4" font-size="8">220R</text>
+                </g>
+
+                <!-- Config Button Symbol -->
+                <g transform="translate(760, 440)">
+                    <rect x="0" y="0" width="180" height="50" rx="8" fill="#111827" stroke="#2a3a4e" stroke-width="1"/>
+                    <rect x="75" y="15" width="30" height="20" rx="4" fill="none" stroke="#f97316" stroke-width="2"/>
+                    <text x="90" y="30" text-anchor="middle" fill="#f97316" font-size="9">BTN</text>
+                    <text x="40" y="30" fill="#8892a4" font-size="9">GPIO 33</text>
+                    <text x="120" y="30" fill="#8892a4" font-size="9">nach GND</text>
+                </g>
+
+                <!-- Wire labels -->
+                <text x="280" y="140" fill="#a855f7" font-size="8" font-weight="600">SPI BUS</text>
+                <text x="640" y="140" fill="#3b82f6" font-size="8" font-weight="600">MAVLink/MSP</text>
+
+                <!-- Power rail -->
+                <line x1="50" y1="555" x2="700" y2="555" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+                <text x="375" y="550" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">3.3V Power Rail</text>
+                <line x1="50" y1="580" x2="700" y2="580" stroke="#6b7280" stroke-width="3" stroke-linecap="round"/>
+                <text x="375" y="575" text-anchor="middle" fill="#6b7280" font-size="10" font-weight="600">GND Rail</text>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Pin Table Follower -->
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>Pin-Belegung Follower (ESP32)</h2>
+            <span class="badge badge-follower">ESP32</span>
+        </div>
+        <table class="pin-table">
+            <thead>
+                <tr><th>Gruppe</th><th>Funktion</th><th>ESP32 Pin</th><th>Ziel</th><th>Kabel</th></tr>
+            </thead>
+            <tbody>
+                <tr><td rowspan="6" style="color:#a855f7;font-weight:700">SPI (Lora)</td><td>SCK</td><td><code>GPIO 18</code></td><td>SX1278 SCK</td><td><span class="color-dot" style="background:#a855f7"></span>Lila</td></tr>
+                <tr><td>MISO</td><td><code>GPIO 19</code></td><td>SX1278 MISO</td><td><span class="color-dot" style="background:#c084fc"></span>Helllila</td></tr>
+                <tr><td>MOSI</td><td><code>GPIO 23</code></td><td>SX1278 MOSI</td><td><span class="color-dot" style="background:#d8b4fe"></span>Lavendel</td></tr>
+                <tr><td>NSS (CS)</td><td><code>GPIO 5</code></td><td>SX1278 NSS</td><td><span class="color-dot" style="background:#a855f7"></span>Lila</td></tr>
+                <tr><td>RST</td><td><code>GPIO 14</code></td><td>SX1278 RST</td><td><span class="color-dot" style="background:#a855f7"></span>Lila</td></tr>
+                <tr><td>DIO0 (IRQ)</td><td><code>GPIO 2</code></td><td>SX1278 DIO0</td><td><span class="color-dot" style="background:#f97316"></span>Orange</td></tr>
+                <tr><td rowspan="2" style="color:#3b82f6;font-weight:700">UART1 (FC)</td><td>TX</td><td><code>GPIO 17</code></td><td>FC RX</td><td><span class="color-dot" style="background:#3b82f6"></span>Blau</td></tr>
+                <tr><td>RX</td><td><code>GPIO 16</code></td><td>FC TX</td><td><span class="color-dot" style="background:#60a5fa"></span>Hellblau</td></tr>
+                <tr><td rowspan="4" style="color:#10b981;font-weight:700">LEDs</td><td>LINK</td><td><code>GPIO 25</code></td><td>LED Gruen + 220 Ohm</td><td><span class="color-dot" style="background:#10b981"></span>Gruen</td></tr>
+                <tr><td>FC</td><td><code>GPIO 26</code></td><td>LED Blau + 220 Ohm</td><td><span class="color-dot" style="background:#3b82f6"></span>Blau</td></tr>
+                <tr><td>GPS</td><td><code>GPIO 27</code></td><td>LED Weiss + 220 Ohm</td><td><span class="color-dot" style="background:#e2e8f0"></span>Weiss</td></tr>
+                <tr><td>ERR</td><td><code>GPIO 32</code></td><td>LED Rot + 220 Ohm</td><td><span class="color-dot" style="background:#ef4444"></span>Rot</td></tr>
+                <tr><td style="color:#f97316;font-weight:700">Config</td><td>Button</td><td><code>GPIO 33</code></td><td>Taste nach GND</td><td><span class="color-dot" style="background:#f97316"></span>Orange</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="warning-box">
+        <strong>⚠️ Wichtig:</strong> Alle LEDs mit 220 Ohm Vorwiderstand! Lora VCC NUR an 3.3V, niemals 5V!
+        GPIO 33 hat internen Pullup - Taste schaltet nach GND. Config-Modus: Taste beim Einschalten gedrueckt halten.
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TTGO Lora32 V2.1 (All-in-One Alternative)                    -->
+<!-- ============================================================ -->
+<div id="tab-ttgo" class="diagram-container">
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>📦 TTGO Lora32 V2.1 &ndash; All-in-One</h2>
+            <span class="badge badge-ttgo">ALTERNATIVE</span>
+        </div>
+        <div class="diagram-svg">
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="grid3" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a2332" stroke-width="0.5"/>
+                    </pattern>
+                </defs>
+                <rect width="800" height="500" fill="#0d1117"/>
+                <rect width="800" height="500" fill="url(#grid3)"/>
+
+                <!-- TTGO Board (larger, includes Lora) -->
+                <rect x="200" y="50" width="280" height="400" rx="14" fill="#1a2332" stroke="#a855f7" stroke-width="2"/>
+                <rect x="220" y="65" width="240" height="35" rx="5" fill="#2a3a4e"/>
+                <text x="340" y="88" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="700">TTGO Lora32 V2.1</text>
+                <text x="340" y="108" text-anchor="middle" fill="#8892a4" font-size="11">ESP32 + SX1276 integriert</text>
+
+                <!-- Built-in Lora indicator -->
+                <rect x="220" y="120" width="100" height="50" rx="6" fill="rgba(168,85,247,0.15)" stroke="#a855f7" stroke-width="1"/>
+                <text x="270" y="142" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="600">Lora SX1276</text>
+                <text x="270" y="158" text-anchor="middle" fill="#8892a4" font-size="8">433MHz ONBOARD</text>
+
+                <!-- Built-in OLED -->
+                <rect x="340" y="120" width="120" height="50" rx="6" fill="rgba(59,130,246,0.15)" stroke="#3b82f6" stroke-width="1"/>
+                <text x="400" y="142" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="600">OLED Display</text>
+                <text x="400" y="158" text-anchor="middle" fill="#8892a4" font-size="8">SSD1306 ONBOARD</text>
+
+                <!-- Antenna connector -->
+                <line x1="270" y1="120" x2="270" y2="42" stroke="#a855f7" stroke-width="2"/>
+                <line x1="260" y1="52" x2="270" y2="35" stroke="#a855f7" stroke-width="2"/>
+                <line x1="280" y1="52" x2="270" y2="35" stroke="#a855f7" stroke-width="2"/>
+                <text x="270" y="30" text-anchor="middle" fill="#8892a4" font-size="9">SMA Antenne</text>
+
+                <!-- Pin headers left -->
+                <text x="210" y="195" fill="#8892a4" font-size="9" font-weight="600">Verfuegbare GPIOs:</text>
+                <text x="210" y="215" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 16 (RX1) -> FC TX</text>
+                <text x="210" y="235" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 17 (TX1) -> FC RX</text>
+                <text x="210" y="260" fill="#10b981" font-size="10" font-family="monospace">GPIO 25 -> LED LINK</text>
+                <text x="210" y="280" fill="#3b82f6" font-size="10" font-family="monospace">GPIO 26 -> LED FC</text>
+                <text x="210" y="300" fill="#e2e8f0" font-size="10" font-family="monospace">GPIO 27 -> LED GPS</text>
+                <text x="210" y="320" fill="#ef4444" font-size="10" font-family="monospace">GPIO 32 -> LED ERR</text>
+                <text x="210" y="340" fill="#f97316" font-size="10" font-family="monospace">GPIO 33 -> Config BTN</text>
+
+                <!-- Internal connections note -->
+                <rect x="210" y="360" width="260" height="60" rx="6" fill="rgba(168,85,247,0.1)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
+                <text x="340" y="380" text-anchor="middle" fill="#a855f7" font-size="10" font-weight="600">Integrierte Lora-Pins (nicht verbinden!)</text>
+                <text x="340" y="396" text-anchor="middle" fill="#8892a4" font-size="9">SCK=5, MISO=19, MOSI=27, CS=18, RST=14, IRQ=26</text>
+                <text x="340" y="410" text-anchor="middle" fill="#ef4444" font-size="9">Kollidiert mit LED GPS (27) und LED FC (26)!</text>
+
+                <!-- FC Connection -->
+                <rect x="600" y="150" width="160" height="120" rx="12" fill="#1a2332" stroke="#10b981" stroke-width="2"/>
+                <text x="680" y="180" text-anchor="middle" fill="#10b981" font-size="14" font-weight="700">FC</text>
+                <text x="680" y="198" text-anchor="middle" fill="#8892a4" font-size="10">INAV / ArduPilot</text>
+                <rect x="595" y="210" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="610" y="219" fill="#8892a4" font-size="9">RX</text>
+                <rect x="595" y="230" width="10" height="10" rx="2" fill="#3b82f6"/>
+                <text x="610" y="239" fill="#8892a4" font-size="9">TX</text>
+                <rect x="595" y="250" width="10" height="10" rx="2" fill="#6b7280"/>
+                <text x="610" y="259" fill="#8892a4" font-size="9">GND</text>
+
+                <!-- Wires ESP32 -> FC -->
+                <path d="M 480 225 L 540 225 L 540 215 L 595 215" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                <path d="M 480 240 L 550 240 L 550 235 L 595 235" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+                <path d="M 480 450 L 570 450 L 570 255 L 595 255" fill="none" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"/>
+
+                <!-- Power -->
+                <rect x="600" y="310" width="160" height="80" rx="8" fill="rgba(245,158,11,0.1)" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
+                <text x="680" y="335" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">Stromversorgung</text>
+                <text x="680" y="355" text-anchor="middle" fill="#8892a4" font-size="9">5V via USB-C oder</text>
+                <text x="680" y="370" text-anchor="middle" fill="#8892a4" font-size="9">5V Pin (BEC 2A+)</text>
+
+                <!-- Note about pin conflicts -->
+                <rect x="40" y="430" width="720" height="50" rx="8" fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.3)" stroke-width="1"/>
+                <text x="400" y="452" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700">PIN-KONFLIKT: GPIO 26 und 27 werden vom Lora-Modul und LEDs gleichzeitig genutzt!</text>
+                <text x="400" y="470" text-anchor="middle" fill="#8892a4" font-size="10">Loesung: LED FC auf GPIO 13, LED GPS auf GPIO 12 aendern (in config.h anpassen)</text>
+            </svg>
+        </div>
+    </div>
+
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>TTGO Lora32 V2.1 Pin-Anpassung</h2>
+            <span class="badge badge-ttgo">PIN-FIX</span>
+        </div>
+        <table class="pin-table">
+            <thead>
+                <tr><th>Funktion</th><th>Original (ESP32 DevKit)</th><th>TTGO Alternative</th><th>Grund</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>LED LINK</td><td><code>GPIO 25</code></td><td><code>GPIO 25</code></td><td>OK - kein Konflikt</td></tr>
+                <tr><td>LED FC</td><td><code>GPIO 26</code></td><td style="color:#ef4444"><code>GPIO 13</code></td><td>GPIO 26 = Lora IRQ auf TTGO</td></tr>
+                <tr><td>LED GPS</td><td><code>GPIO 27</code></td><td style="color:#ef4444"><code>GPIO 12</code></td><td>GPIO 27 = Lora MOSI auf TTGO</td></tr>
+                <tr><td>LED ERR</td><td><code>GPIO 32</code></td><td><code>GPIO 32</code></td><td>OK - kein Konflikt</td></tr>
+                <tr><td>Config BTN</td><td><code>GPIO 33</code></td><td><code>GPIO 33</code></td><td>OK - kein Konflikt</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-card">
+            <h3>Vorteile TTGO Lora32</h3>
+            <ul>
+                <li><span class="label">Kompakt</span><span class="value">Alles auf einem Board</span></li>
+                <li><span class="label">Kosten</span><span class="value">~8 EUR</span></li>
+                <li><span class="label">OLED</span><span class="value">Status auf Display</span></li>
+                <li><span class="label">Weniger Kabel</span><span class="value">Kein SPI-Wiring</span></li>
+                <li><span class="label">Batterie</span><span class="value">LiPo-Anschluss onboard</span></li>
+            </ul>
+        </div>
+        <div class="info-card">
+            <h3>Nachteile TTGO Lora32</h3>
+            <ul>
+                <li><span class="label">Pin-Konflikte</span><span class="value" style="color:var(--red)">GPIO 26, 27 belegt</span></li>
+                <li><span class="label">SX1276</span><span class="value">statt SX1278</span></li>
+                <li><span class="label">Reichweite</span><span class="value">etwas geringer</span></li>
+                <li><span class="label">Flashen</span><span class="value">GPIO 0 gedrueckt</span></li>
+                <li><span class="label">Antenne</span><span class="value">SMA-Stecker nötig</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- BOM (Bill of Materials)                                       -->
+<!-- ============================================================ -->
+<div id="tab-bom" class="diagram-container">
+    <div class="diagram-card">
+        <div class="card-header">
+            <h2>📋 Bill of Materials</h2>
+            <span class="badge badge-leader">BOM</span>
+        </div>
+
+        <!-- Leader BOM -->
+        <h3 style="padding:16px 16px 8px; color:var(--accent);">🏆 Leader (1x)</h3>
+        <table class="bom-table">
+            <thead><tr><th>Komponente</th><th>Empfehlung</th><th>Menge</th><th>Preis</th></tr></thead>
+            <tbody>
+                <tr><td>Companion Computer</td><td>Raspberry Pi Zero 2W</td><td>1</td><td>~15 EUR</td></tr>
+                <tr><td>SD-Karte</td><td>16GB Class 10</td><td>1</td><td>~5 EUR</td></tr>
+                <tr><td>Lora Modul</td><td>SX1278 / RFM95W 433MHz</td><td>1</td><td>~5 EUR</td></tr>
+                <tr><td>Lora Antenne</td><td>433MHz Drahtantenne (17.3cm)</td><td>1</td><td>~1 EUR</td></tr>
+                <tr><td>BEC</td><td>5V/3A Step-Down (USB-C)</td><td>1</td><td>~5 EUR</td></tr>
+                <tr><td>Kabel</td><td>JST-SH 1.0mm + Dupont</td><td>1 Set</td><td>~3 EUR</td></tr>
+            </tbody>
+        </table>
+        <div style="text-align:right; padding:8px 16px; font-weight:700; color:var(--accent);">
+            Leader Total: ~34 EUR
+        </div>
+
+        <!-- Follower BOM -->
+        <h3 style="padding:16px 16px 8px; color:var(--green);">🛩️ Follower (pro Einheit)</h3>
+        <table class="bom-table">
+            <thead><tr><th>Komponente</th><th>Empfehlung</th><th>Menge</th><th>Preis</th></tr></thead>
+            <tbody>
+                <tr><td>MCU + Lora (Option A)</td><td>TTGO Lora32 V2.1 433MHz</td><td>1</td><td>~8 EUR</td></tr>
+                <tr><td>ODER: MCU (Option B)</td><td>ESP32-WROOM-32 DevKit</td><td>1</td><td>~5 EUR</td></tr>
+                <tr><td>ODER: Lora (Option B)</td><td>SX1278 / RFM95W 433MHz</td><td>1</td><td>~5 EUR</td></tr>
+                <tr><td>Status LEDs</td><td>5mm: gruen, blau, weiss, rot</td><td>4</td><td>~0.50 EUR</td></tr>
+                <tr><td>Widerstaende</td><td>220 Ohm 1/4W</td><td>4</td><td>~0.20 EUR</td></tr>
+                <tr><td>Config Taste</td><td>Tactile Switch 6mm</td><td>1</td><td>~0.20 EUR</td></tr>
+                <tr><td>Lora Antenne</td><td>433MHz Drahtantenne (17.3cm)</td><td>1</td><td>~1 EUR</td></tr>
+                <tr><td>Kabel</td><td>JST-SH 1.0mm + Dupont</td><td>1 Set</td><td>~2 EUR</td></tr>
+                <tr><td>BEC</td><td>5V/2A Step-Down (Micro-USB)</td><td>1</td><td>~3 EUR</td></tr>
+            </tbody>
+        </table>
+        <div style="text-align:right; padding:8px 16px; font-weight:700; color:var(--green);">
+            Follower Total (TTGO): ~15 EUR | Follower Total (ESP32+Lora): ~17 EUR
+        </div>
+
+        <!-- Total -->
+        <div style="padding:20px 16px; background:var(--bg2); border-radius:0 0 12px 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:18px;">
+                <span style="font-weight:700;">Komplettes 4er-Team (1 Leader + 3 Follower):</span>
+                <span style="font-weight:700; color:var(--accent); font-size:24px;">~79 EUR</span>
+            </div>
+            <div style="color:var(--text-dim); font-size:12px; margin-top:4px;">(Leader Pi + 3x TTGO Follower + Kabel + Antennen)</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showTab(name) {
+    document.querySelectorAll('.diagram-container').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>

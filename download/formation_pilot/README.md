@@ -299,6 +299,8 @@ Die FC-eigenen Failsafes (RTH, GPS-Failsafe) greifen IMMER zusätzlich und haben
 
 ### Wiring Diagrams
 
+> **Interaktive Version:** [docs/wiring.html](docs/wiring.html) – Im Browser öffnen für Fritzing-Style SVGs mit Pin-Tabellen und BOM!
+
 #### Leader (Raspberry Pi)
 ![Leader Wiring Diagram](docs/wiring_leader.svg)
 
@@ -466,7 +468,7 @@ Python-Engine (`formation/lora_broadcaster.py`):
 - [x] **ESP32 Follower Firmware** – PlatformIO Projekt mit State Machine
 - [ ] **Integrationstests** – Mit realen INAV/AP Flight Controllern
 - [ ] **Lora Module Konfiguration** – AT-Command Setup automatisieren
-- [ ] **Wiring Diagrams** – Fotos und Fritzing-Pläne
+- [x] **Wiring Diagrams** – Interaktive Fritzing-Style Pläne ([wiring.html](docs/wiring.html))
 - [ ] **Video-Tutorial** – Setup und Erstflug-Doku
 - [ ] **OTA Updates** – Firmware-Update über WiFi
 - [ ] **RSSI-basierte Reichweitenwarnung** – Signalqualität im Dashboard
